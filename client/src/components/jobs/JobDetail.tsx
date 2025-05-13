@@ -77,7 +77,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <Link href="/dashboard" className="flex items-center text-primary hover:underline">
+        <Link href="/" className="flex items-center text-primary hover:underline">
           <ChevronLeft className="h-4 w-4 mr-1" />
           Geri Dön
         </Link>
