@@ -250,7 +250,7 @@ export default function JobForm({ jobId }: JobFormProps) {
         notes: formData.notes,
       };
       
-      let jobId: number;
+      let newJobId: number;
       
       // Create or update job
       if (jobId) {
@@ -259,24 +259,24 @@ export default function JobForm({ jobId }: JobFormProps) {
           id: parseInt(jobId),
           data: jobData,
         });
-        jobId = parseInt(jobId);
+        newJobId = parseInt(jobId);
       } else {
         // Create new job
         const newJob = await createJobMutation.mutateAsync(jobData);
-        jobId = newJob.id;
+        newJobId = newJob.id;
       }
       
       // Handle services
-      if (jobId && formData.selectedServices) {
+      if (newJobId && formData.selectedServices) {
         // If editing, we need to sync the services
-        if (jobServicesQuery.data) {
+        if (jobId && jobServicesQuery.data) {
           const existingServiceIds = jobServicesQuery.data.map(s => s.id);
           
           // Remove services that were deselected
           for (const existingId of existingServiceIds) {
             if (!formData.selectedServices.includes(existingId)) {
               await removeJobServiceMutation.mutateAsync({
-                jobId,
+                jobId: newJobId,
                 serviceId: existingId,
               });
             }
@@ -286,7 +286,7 @@ export default function JobForm({ jobId }: JobFormProps) {
           for (const selectedId of formData.selectedServices) {
             if (!existingServiceIds.includes(selectedId)) {
               await addJobServiceMutation.mutateAsync({
-                jobId,
+                jobId: newJobId,
                 serviceId: selectedId,
               });
             }
@@ -295,7 +295,7 @@ export default function JobForm({ jobId }: JobFormProps) {
           // Add all selected services for a new job
           for (const serviceId of formData.selectedServices) {
             await addJobServiceMutation.mutateAsync({
-              jobId,
+              jobId: newJobId,
               serviceId,
             });
           }
