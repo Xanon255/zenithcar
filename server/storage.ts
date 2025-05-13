@@ -455,6 +455,20 @@ export class DatabaseStorage implements IStorage {
     endDate.setHours(23, 59, 59, 999);
     
     console.log("Günlük istatistik için tarih aralığı:", startDate, endDate);
+    console.log("Gelen tarih:", date);
+    
+    // Tüm işleri al ve döndür (iptal edilenler hariç)
+    const allJobs = await db
+      .select()
+      .from(jobs)
+      .where(
+        and(
+          sql`DATE(${jobs.createdAt}) = DATE(${date})`,
+          sql`${jobs.status} != 'iptal'`
+        )
+      );
+      
+    console.log("Bulunan işler:", allJobs);
     
     const jobsResult = await db
       .select({
@@ -465,8 +479,7 @@ export class DatabaseStorage implements IStorage {
       .from(jobs)
       .where(
         and(
-          sql`${jobs.createdAt} >= ${startDate}`,
-          sql`${jobs.createdAt} <= ${endDate}`,
+          sql`DATE(${jobs.createdAt}) = DATE(${date})`,
           // İptal edilmiş işleri toplam tutara dahil etmiyoruz
           sql`${jobs.status} != 'iptal'`
         )
