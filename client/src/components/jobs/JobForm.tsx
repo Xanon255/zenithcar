@@ -514,7 +514,11 @@ export default function JobForm({ jobId }: JobFormProps) {
   
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={(e) => {
+        e.preventDefault();
+        console.log("Form gönderiliyor...");
+        form.handleSubmit(onSubmit)(e);
+      }} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <h4 className="text-gray-darkest font-medium mb-4">Müşteri Bilgileri</h4>
