@@ -374,19 +374,31 @@ export default function Reports() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span>Toplam Gelir:</span>
-                      <span className="font-medium">32,450.00 TL</span>
+                      <span className="font-medium">
+                        {statsQuery.data?.totalAmount ? formatCurrency(statsQuery.data.totalAmount) : "0.00"} TL
+                      </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Tahsil Edilen:</span>
-                      <span className="font-medium text-green-600">30,120.00 TL</span>
+                      <span className="font-medium text-green-600">
+                        {statsQuery.data?.totalPaid ? formatCurrency(statsQuery.data.totalPaid) : "0.00"} TL
+                      </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Bekleyen Ödemeler:</span>
-                      <span className="font-medium text-amber-600">2,330.00 TL</span>
+                      <span className="font-medium text-amber-500">
+                        {statsQuery.data 
+                          ? formatCurrency(statsQuery.data.totalAmount - statsQuery.data.totalPaid) 
+                          : "0.00"} TL
+                      </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Ortalama İş Başı Gelir:</span>
-                      <span className="font-medium">135.21 TL</span>
+                      <span className="font-medium">
+                        {statsQuery.data && statsQuery.data.totalJobs > 0 
+                          ? formatCurrency(statsQuery.data.totalAmount / statsQuery.data.totalJobs) 
+                          : "0.00"} TL
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -396,7 +408,7 @@ export default function Reports() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span>Toplam İş Sayısı:</span>
-                      <span className="font-medium">240</span>
+                      <span className="font-medium">{statsQuery.data?.totalJobs || 0}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Günlük Ortalama İş:</span>
