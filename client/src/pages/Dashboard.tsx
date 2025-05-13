@@ -106,7 +106,7 @@ export default function Dashboard() {
       
       <JobsTable 
         title="Bugün Açılan İş Emirleri" 
-        date={format(today, "yyyy-MM-dd")}
+        date={today_iso_date}
       />
       
       <div className="fixed bottom-6 right-6 flex flex-col space-y-3 no-print">

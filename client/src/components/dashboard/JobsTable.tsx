@@ -32,6 +32,9 @@ export default function JobsTable({ title, date }: JobsTableProps) {
   const today = new Date().toISOString().split('T')[0]; // 'YYYY-MM-DD' formatında bugünün tarihi
   const formattedDate = date || today;
   
+  console.log("JobsTable - Tarih:", formattedDate);
+  console.log(`JobsTable - API isteği: /api/jobs?date=${formattedDate}`);
+  
   const jobsQuery = useQuery<Job[]>({
     queryKey: [`/api/jobs?date=${formattedDate}`],
     refetchInterval: 3000, // Her 3 saniyede bir otomatik yenileme
