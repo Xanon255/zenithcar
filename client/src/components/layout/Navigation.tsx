@@ -7,7 +7,8 @@ import {
   BarChart2, 
   FileText, 
   Car, 
-  User
+  User,
+  DollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,7 @@ const navItems = [
   { href: "/new-job", icon: PlusCircle, label: "YENİ İŞ EMRİ" },
   { href: "/jobs", icon: Eye, label: "İŞ EMİRLERİ" },
   { href: "/customers", icon: Users, label: "MÜŞTERİLER" },
+  { href: "/expenses", icon: DollarSign, label: "GİDERLER" },
   { href: "/reports", icon: BarChart2, label: "RAPORLAR" },
   { href: "/price-list", icon: FileText, label: "FİYAT LİSTESİ" },
   { href: "/vehicle-list", icon: Car, label: "ARAÇ LİSTESİ" },

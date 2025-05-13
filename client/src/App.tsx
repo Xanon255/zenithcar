@@ -13,6 +13,7 @@ import Reports from "@/pages/Reports";
 import PriceList from "@/pages/PriceList";
 import VehicleList from "@/pages/VehicleList";
 import Users from "@/pages/Users";
+import Expenses from "@/pages/Expenses";
 
 function Router() {
   return (
@@ -25,6 +26,7 @@ function Router() {
         <Route path="/jobs" component={Dashboard} />
         <Route path="/jobs/:id" component={ViewJob} />
         <Route path="/customers" component={Customers} />
+        <Route path="/expenses" component={Expenses} />
         <Route path="/reports" component={Reports} />
         <Route path="/price-list" component={PriceList} />
         <Route path="/vehicle-list" component={VehicleList} />

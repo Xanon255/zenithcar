@@ -9,6 +9,7 @@ import {
   insertJobSchema, 
   insertJobServiceSchema,
   insertUserSchema,
+  insertExpenseSchema,
   jobStatusEnum
 } from "@shared/schema";
 
