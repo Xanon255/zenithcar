@@ -12,6 +12,7 @@ import { formatCurrency } from "@/lib/utils";
 export default function Dashboard() {
   const [today] = useState(new Date());
   const formattedDate = format(today, "dd-MM-yyyy", { locale: tr });
+  const today_iso_date = today.toISOString().split('T')[0]; // YYYY-MM-DD format
   const [_, setLocation] = useLocation();
   const searchParams = new URLSearchParams(useSearch());
   const shouldRefresh = searchParams.get('refresh') === 'true';
@@ -41,7 +42,7 @@ export default function Dashboard() {
   
   // Fetch daily statistics
   const statsQuery = useQuery<DailyStats>({
-    queryKey: [`/api/stats/daily?date=${format(today, "yyyy-MM-dd")}`],
+    queryKey: [`/api/stats/daily?date=${today_iso_date}`],
     refetchInterval: 3000, // Her 3 saniyede bir otomatik yenileme
     staleTime: 0, // Her zaman en güncel veriyi alalım
   });

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Eye, Edit, Trash, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
+import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -28,8 +29,11 @@ export default function JobsTable({ title, date }: JobsTableProps) {
   const [jobToDelete, setJobToDelete] = useState<number | null>(null);
   
   // Fetch jobs
+  const today = new Date().toISOString().split('T')[0]; // 'YYYY-MM-DD' formatında bugünün tarihi
+  const formattedDate = date || today;
+  
   const jobsQuery = useQuery<Job[]>({
-    queryKey: [date ? `/api/jobs?date=${date}` : "/api/jobs"],
+    queryKey: [`/api/jobs?date=${formattedDate}`],
     refetchInterval: 3000, // Her 3 saniyede bir otomatik yenileme
     staleTime: 0, // Her zaman en güncel veriyi alalım
   });
