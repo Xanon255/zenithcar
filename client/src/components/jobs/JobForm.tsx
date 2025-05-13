@@ -393,6 +393,7 @@ export default function JobForm({ jobId }: JobFormProps) {
               customerId: customerId as number,
               totalAmount: formData.totalAmount,
               paidAmount: formData.paidAmount || "0",
+              paymentMethod: formData.paymentMethod,
               status: formData.status as "bekliyor" | "devam_ediyor" | "tamamlandi" | "iptal",
               notes: formData.notes
             },
@@ -414,6 +415,7 @@ export default function JobForm({ jobId }: JobFormProps) {
             customerId: customerId as number,
             totalAmount: formData.totalAmount,
             paidAmount: formData.paidAmount || "0",
+            paymentMethod: formData.paymentMethod,
             status: formData.status,
             notes: formData.notes
           });
