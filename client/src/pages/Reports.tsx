@@ -2,6 +2,14 @@ import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, subDays } from "date-fns";
 import { tr } from "date-fns/locale";
+
+// Define the stats interface
+interface DailyStats {
+  totalAmount: number;
+  totalPaid: number;
+  totalJobs: number;
+  pendingPayments: number;
+}
 import { Calendar as CalendarIcon, ChevronRight, Download, Printer } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 import { Button } from "@/components/ui/button";
@@ -62,29 +70,53 @@ export default function Reports() {
   const formattedEndDate = format(dateRange.end, "yyyy-MM-dd");
   
   // Fetch statistics for the date range
-  const statsQuery = useQuery({
+  const statsQuery = useQuery<DailyStats>({
     queryKey: [`/api/stats/daily?date=${format(date, "yyyy-MM-dd")}`],
   });
   
-  // Mock data for charts (in a real app, this would come from the API)
+  // Fetch jobs to generate chart data
+  const jobsQuery = useQuery<any[]>({
+    queryKey: ["/api/jobs"],
+  });
+  
+  // Create daily revenue data based on actual jobs
   const dailyRevenueData = [
-    { date: "Pazartesi", total: 1200 },
-    { date: "Salı", total: 900 },
-    { date: "Çarşamba", total: 1500 },
-    { date: "Perşembe", total: 1100 },
-    { date: "Cuma", total: 1800 },
-    { date: "Cumartesi", total: 2200 },
-    { date: "Pazar", total: 1000 }
+    { date: "Pazartesi", total: 0 },
+    { date: "Salı", total: 0 },
+    { date: "Çarşamba", total: 0 },
+    { date: "Perşembe", total: 0 },
+    { date: "Cuma", total: 0 },
+    { date: "Cumartesi", total: 0 },
+    { date: "Pazar", total: 0 }
   ];
   
-  const serviceDistributionData = [
-    { name: "Dış Yıkama", value: 35 },
-    { name: "İç Temizlik", value: 25 },
-    { name: "Motor Yıkama", value: 10 },
-    { name: "Pasta Cila", value: 15 },
-    { name: "Detaylı Temizlik", value: 10 },
-    { name: "Seramik Kaplama", value: 5 }
-  ];
+  // Populate daily revenue from actual job data if available
+  if (jobsQuery.data && jobsQuery.data.length > 0) {
+    const dayMap = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+    
+    jobsQuery.data.forEach(job => {
+      const jobDate = new Date(job.createdAt);
+      const dayName = dayMap[jobDate.getDay()];
+      const dayData = dailyRevenueData.find(item => item.date === dayName);
+      
+      if (dayData) {
+        dayData.total += Number(job.totalAmount);
+      }
+    });
+  }
+  
+  // Create service distribution data based on jobs
+  const servicesQuery = useQuery({
+    queryKey: ["/api/services"],
+  });
+  
+  // Initialize service distribution with actual service names but zero values
+  const serviceDistributionData = servicesQuery.data 
+    ? servicesQuery.data.map(service => ({ 
+        name: service.name, 
+        value: 0 
+      }))
+    : [];
   
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#FF6B6B'];
   
