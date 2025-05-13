@@ -31,8 +31,16 @@ export default function Dashboard() {
     }
   }, [shouldRefresh, queryClient, setLocation]);
   
+  // Define the DailyStats interface for type safety
+  interface DailyStats {
+    totalAmount: number;
+    totalPaid: number;
+    totalJobs: number;
+    pendingPayments: number;
+  }
+  
   // Fetch daily statistics
-  const statsQuery = useQuery({
+  const statsQuery = useQuery<DailyStats>({
     queryKey: [`/api/stats/daily?date=${format(today, "yyyy-MM-dd")}`],
   });
   
