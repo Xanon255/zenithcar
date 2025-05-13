@@ -49,7 +49,7 @@ export default function Dashboard() {
   };
   
   return (
-    <main className="container mx-auto px-4 py-6">
+    <main className="container max-w-6xl mx-auto px-4 py-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-medium text-gray-darkest">
