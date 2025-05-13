@@ -338,6 +338,146 @@ export default function Reports() {
               </CardContent>
             </Card>
           </div>
+          
+          {/* Payment Methods Statistics Section */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-medium">Ödeme Yöntemleri İstatistikleri</h2>
+            <Card>
+              <CardHeader>
+                <CardTitle>Ödeme Yöntemi Dağılımı</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  {paymentMethodsQuery.isLoading ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p>Yükleniyor...</p>
+                    </div>
+                  ) : paymentMethodsQuery.isError ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p>Veri yüklenirken bir hata oluştu</p>
+                    </div>
+                  ) : paymentMethodsQuery.data && paymentMethodsQuery.data.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={paymentMethodsQuery.data.map(item => ({
+                            name: item.method === 'nakit' ? 'Nakit' :
+                                  item.method === 'kredi_karti' ? 'Kredi Kartı' :
+                                  item.method === 'havale_eft' ? 'Havale/EFT' : 'Diğer',
+                            value: item.count
+                          }))}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={true}
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {paymentMethodsQuery.data.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={['#0088FE', '#00C49F', '#FFBB28', '#FF8042'][index % 4]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center">
+                      <p>Ödeme yöntemi verisi bulunamadı</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Payment Methods Detailed Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Ödeme Yöntemleri Detayları</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {paymentMethodsQuery.isLoading ? (
+                  <div className="flex items-center justify-center py-6">
+                    <p>Yükleniyor...</p>
+                  </div>
+                ) : paymentMethodsQuery.isError ? (
+                  <div className="flex items-center justify-center py-6">
+                    <p>Veri yüklenirken bir hata oluştu</p>
+                  </div>
+                ) : paymentMethodsQuery.data && paymentMethodsQuery.data.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="py-2 px-4 text-left font-medium">Ödeme Yöntemi</th>
+                          <th className="py-2 px-4 text-right font-medium">İşlem Sayısı</th>
+                          <th className="py-2 px-4 text-right font-medium">Toplam Tutar</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paymentMethodsQuery.data.map((method, index) => (
+                          <tr key={index} className="border-b border-gray-200">
+                            <td className="py-2 px-4">
+                              {method.method === 'nakit' ? 'Nakit' :
+                               method.method === 'kredi_karti' ? 'Kredi Kartı' :
+                               method.method === 'havale_eft' ? 'Havale/EFT' : 'Diğer'}
+                            </td>
+                            <td className="py-2 px-4 text-right">{method.count}</td>
+                            <td className="py-2 px-4 text-right">{formatCurrency(method.total)} TL</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center py-6">
+                    <p>Ödeme yöntemi verisi bulunamadı</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Net Profit Statistics Section */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-medium">Net Kar İstatistikleri</h2>
+            <Card>
+              <CardHeader>
+                <CardTitle>Gelir ve Gider Analizi</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {netProfitQuery.isLoading ? (
+                  <div className="flex items-center justify-center py-6">
+                    <p>Yükleniyor...</p>
+                  </div>
+                ) : netProfitQuery.isError ? (
+                  <div className="flex items-center justify-center py-6">
+                    <p>Veri yüklenirken bir hata oluştu</p>
+                  </div>
+                ) : netProfitQuery.data ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-blue-50 rounded-lg p-4 text-center">
+                      <p className="text-sm text-gray-500 mb-1">Toplam Gelir</p>
+                      <p className="text-xl font-semibold text-blue-600">{formatCurrency(netProfitQuery.data.totalRevenue)} TL</p>
+                    </div>
+                    <div className="bg-red-50 rounded-lg p-4 text-center">
+                      <p className="text-sm text-gray-500 mb-1">Toplam Gider</p>
+                      <p className="text-xl font-semibold text-red-600">{formatCurrency(netProfitQuery.data.totalExpenses)} TL</p>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-4 text-center">
+                      <p className="text-sm text-gray-500 mb-1">Net Kar</p>
+                      <p className="text-xl font-semibold text-green-600">{formatCurrency(netProfitQuery.data.netProfit)} TL</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center py-6">
+                    <p>Net kar verisi bulunamadı</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
         
         <TabsContent value="weekly" className="space-y-6">
