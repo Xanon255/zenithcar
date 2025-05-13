@@ -7,7 +7,6 @@ import { formatCurrency, formatDate, getJobStatusDisplay } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Printer, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
@@ -43,42 +42,42 @@ export default function CustomerDetail() {
   });
 
   // Fetch customer analytics
-  const analyticsQuery = useQuery<any>({
+  const analyticsQuery = useQuery<{ totalAmount: number; totalJobs: number }>({
     queryKey: [`/api/customers/${customerId}/analytics`],
     enabled: !isNaN(customerId),
     refetchInterval: 3000,
   });
 
+  if (customerQuery.isLoading || vehiclesQuery.isLoading || jobsQuery.isLoading || analyticsQuery.isLoading) {
+    return <div className="container mx-auto px-4 py-8 text-center">Yükleniyor...</div>;
+  }
+
+  // If any queries failed or returned no data
+  if (!customerQuery.data) {
+    return <div className="container mx-auto px-4 py-8 text-center">Müşteri bulunamadı.</div>;
+  }
+
   const customer = customerQuery.data;
   const vehicles = vehiclesQuery.data || [];
   const jobs = jobsQuery.data || [];
-  
-  // Pagination
-  const totalPages = Math.ceil(jobs.length / itemsPerPage);
-  const paginatedJobs = jobs.slice(
+  const totalAmount = analyticsQuery.data?.totalAmount || 0;
+  const totalJobs = analyticsQuery.data?.totalJobs || 0;
+
+  // Sort jobs by date, descending
+  const sortedJobs = [...jobs].sort((a, b) => {
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  // Pagination for jobs
+  const totalPages = Math.ceil(sortedJobs.length / itemsPerPage);
+  const currentJobs = sortedJobs.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
-  );
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-  
-  // Calculate customer stats
-  const totalAmount = jobs.reduce((sum, job) => sum + Number(job.totalAmount), 0);
-  const totalJobs = jobs.length;
-  const completedJobs = jobs.filter(job => job.status === 'tamamlandi').length;
-  const pendingJobs = jobs.filter(job => job.status === 'bekliyor' || job.status === 'devam_ediyor').length;
-  
-  // Get recent visit
-  const sortedJobs = [...jobs].sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
   const lastVisit = sortedJobs.length > 0 ? new Date(sortedJobs[0].createdAt) : null;
 
   if (isNaN(customerId)) {
     return (
-      <Layout>
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-2xl font-bold mb-4">Geçersiz müşteri ID'si</h1>
           <Link href="/customers">
@@ -88,12 +87,10 @@ export default function CustomerDetail() {
             </Button>
           </Link>
         </div>
-      </Layout>
     );
   }
 
   return (
-    <Layout>
       <div className="container max-w-6xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
@@ -158,52 +155,55 @@ export default function CustomerDetail() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-xl font-bold text-primary">
-                      {lastVisit 
-                        ? format(lastVisit, 'dd MMM yyyy') 
-                        : "Ziyaret yok"}
+                      {lastVisit ? formatDate(lastVisit) : "Ziyaret yok"}
                     </div>
                   </CardContent>
                 </Card>
               </div>
-
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-xl font-semibold mb-4">Müşteri Bilgileri</h2>
+              
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-bold mb-4">Müşteri Bilgileri</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <p className="text-gray-500">İsim</p>
-                    <p className="font-medium">{customer.name}</p>
+                    <h3 className="text-sm font-medium text-gray-500">İsim</h3>
+                    <p className="mt-1">{customer.name}</p>
                   </div>
+                  
                   <div>
-                    <p className="text-gray-500">Telefon</p>
-                    <p className="font-medium">{customer.phone || "-"}</p>
+                    <h3 className="text-sm font-medium text-gray-500">Telefon</h3>
+                    <p className="mt-1">{customer.phone || "-"}</p>
                   </div>
+                  
                   <div>
-                    <p className="text-gray-500">E-posta</p>
-                    <p className="font-medium">{customer.email || "-"}</p>
+                    <h3 className="text-sm font-medium text-gray-500">E-posta</h3>
+                    <p className="mt-1">{customer.email || "-"}</p>
                   </div>
+                  
                   <div>
-                    <p className="text-gray-500">Müşteri Numarası</p>
-                    <p className="font-medium">{customer.id}</p>
+                    <h3 className="text-sm font-medium text-gray-500">Müşteri Numarası</h3>
+                    <p className="mt-1">{customer.id}</p>
                   </div>
                 </div>
               </div>
 
-              <Tabs defaultValue="vehicles">
-                <TabsList className="mb-4">
-                  <TabsTrigger value="vehicles">Araçlar</TabsTrigger>
-                  <TabsTrigger value="jobs">İş Geçmişi</TabsTrigger>
+              <Tabs defaultValue="araçlar" className="w-full">
+                <TabsList className="grid w-full md:w-[400px] grid-cols-2">
+                  <TabsTrigger value="araçlar">Araçlar</TabsTrigger>
+                  <TabsTrigger value="iş-geçmişi">İş Geçmişi</TabsTrigger>
                 </TabsList>
-                
-                <TabsContent value="vehicles">
-                  <div className="bg-white rounded-lg shadow-sm">
-                    <div className="p-4 border-b">
-                      <h2 className="text-xl font-semibold">Kayıtlı Araçlar</h2>
+                <TabsContent value="araçlar" className="mt-4">
+                  <div className="bg-white rounded-lg shadow overflow-hidden">
+                    <div className="p-4 flex justify-between items-center border-b">
+                      <h2 className="text-lg font-medium">Kayıtlı Araçlar</h2>
+                      <Button size="sm" className="gap-1" onClick={() => alert("Araç ekle modalı")}>
+                        + Araç Ekle
+                      </Button>
                     </div>
                     
-                    {vehiclesQuery.isLoading ? (
-                      <div className="p-6 text-center">Yükleniyor...</div>
-                    ) : vehicles.length === 0 ? (
-                      <div className="p-6 text-center text-gray-500">Bu müşteriye ait araç bulunmamaktadır</div>
+                    {vehicles.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500">
+                        Bu müşteriye ait kayıtlı araç bulunmamaktadır.
+                      </div>
                     ) : (
                       <Table>
                         <TableHeader>
@@ -211,16 +211,22 @@ export default function CustomerDetail() {
                             <TableHead>Plaka</TableHead>
                             <TableHead>Marka</TableHead>
                             <TableHead>Model</TableHead>
-                            <TableHead>Renk</TableHead>
+                            <TableHead>Yıl</TableHead>
+                            <TableHead>İşlemler</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {vehicles.map((vehicle) => (
                             <TableRow key={vehicle.id}>
                               <TableCell className="font-medium">{vehicle.plate}</TableCell>
-                              <TableCell>{vehicle.brand || "-"}</TableCell>
-                              <TableCell>{vehicle.model || "-"}</TableCell>
-                              <TableCell>{vehicle.color || "-"}</TableCell>
+                              <TableCell>{vehicle.brand}</TableCell>
+                              <TableCell>{vehicle.model}</TableCell>
+                              <TableCell>{vehicle.year || "-"}</TableCell>
+                              <TableCell>
+                                <Link href={`/vehicles/${vehicle.id}`}>
+                                  <Button variant="link" size="sm">Detay</Button>
+                                </Link>
+                              </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -228,95 +234,86 @@ export default function CustomerDetail() {
                     )}
                   </div>
                 </TabsContent>
-                
-                <TabsContent value="jobs">
-                  <div className="bg-white rounded-lg shadow-sm">
+                <TabsContent value="iş-geçmişi" className="mt-4">
+                  <div className="bg-white rounded-lg shadow overflow-hidden">
                     <div className="p-4 border-b">
-                      <h2 className="text-xl font-semibold">İş Geçmişi</h2>
+                      <h2 className="text-lg font-medium">İş Geçmişi</h2>
                     </div>
                     
-                    {jobsQuery.isLoading ? (
-                      <div className="p-6 text-center">Yükleniyor...</div>
-                    ) : jobs.length === 0 ? (
-                      <div className="p-6 text-center text-gray-500">Bu müşteriye ait iş geçmişi bulunmamaktadır</div>
+                    {jobs.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500">
+                        Bu müşteriye ait iş kaydı bulunmamaktadır.
+                      </div>
                     ) : (
                       <>
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>İş No</TableHead>
-                              <TableHead>Araç</TableHead>
-                              <TableHead>Tutar</TableHead>
-                              <TableHead>Ödenen</TableHead>
-                              <TableHead>Kalan</TableHead>
                               <TableHead>Tarih</TableHead>
-                              <TableHead>Saat</TableHead>
+                              <TableHead>Plaka</TableHead>
+                              <TableHead>Hizmetler</TableHead>
+                              <TableHead>Tutar</TableHead>
                               <TableHead>Durum</TableHead>
                               <TableHead>İşlemler</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {paginatedJobs.map((job) => {
+                            {currentJobs.map((job) => {
                               const vehicle = vehicles.find(v => v.id === job.vehicleId);
-                              const remaining = Number(job.totalAmount) - Number(job.paidAmount);
-                              const statusInfo = getJobStatusDisplay(job.status);
-                              
                               return (
                                 <TableRow key={job.id}>
-                                  <TableCell>{job.id}</TableCell>
-                                  <TableCell className="font-medium">{vehicle?.plate || "-"}</TableCell>
-                                  <TableCell>{formatCurrency(job.totalAmount)}</TableCell>
-                                  <TableCell className="text-green-600">{formatCurrency(job.paidAmount)}</TableCell>
-                                  <TableCell>{formatCurrency(remaining)}</TableCell>
-                                  <TableCell>{formatDate(job.createdAt)}</TableCell>
-                                  <TableCell>{new Date(job.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</TableCell>
                                   <TableCell>
-                                    <Badge className={`rounded-full px-2 py-1 ${statusInfo.className}`}>
-                                      {statusInfo.label}
+                                    {formatDate(job.createdAt)}
+                                  </TableCell>
+                                  <TableCell>{vehicle?.plate || "-"}</TableCell>
+                                  <TableCell>
+                                    {job.notes || "Standart yıkama"}
+                                  </TableCell>
+                                  <TableCell>{formatCurrency(job.totalAmount)}</TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      className={
+                                        job.status === "tamamlandi"
+                                          ? "bg-green-100 text-green-800"
+                                          : job.status === "bekliyor"
+                                          ? "bg-yellow-100 text-yellow-800"
+                                          : job.status === "iptal"
+                                          ? "bg-red-100 text-red-800"
+                                          : "bg-blue-100 text-blue-800"
+                                      }
+                                    >
+                                      {getJobStatusDisplay(job.status).text}
                                     </Badge>
                                   </TableCell>
                                   <TableCell>
-                                    <div className="flex">
-                                      <Button 
-                                        asChild
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="text-primary"
-                                        title="Görüntüle"
-                                      >
-                                        <Link href={`/jobs/${job.id}`}>
-                                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-eye"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                                        </Link>
-                                      </Button>
-                                    </div>
+                                    <Link href={`/jobs/${job.id}`}>
+                                      <Button variant="link" size="sm">Detay</Button>
+                                    </Link>
                                   </TableCell>
                                 </TableRow>
                               );
                             })}
                           </TableBody>
                         </Table>
-                        
+
                         {totalPages > 1 && (
-                          <div className="flex items-center justify-between px-4 py-4 border-t">
-                            <div>
-                              Toplam {jobs.length} kayıttan {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, jobs.length)} arası gösteriliyor
+                          <div className="flex items-center justify-between px-4 py-3 border-t">
+                            <div className="text-sm text-gray-500">
+                              Toplam {jobs.length} kayıt, Sayfa {currentPage} / {totalPages}
                             </div>
                             <div className="flex items-center space-x-2">
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handlePageChange(currentPage - 1)}
+                                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                                 disabled={currentPage === 1}
                               >
                                 <ChevronLeft className="h-4 w-4" />
                               </Button>
-                              <span className="text-sm">
-                                Sayfa {currentPage} / {totalPages}
-                              </span>
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handlePageChange(currentPage + 1)}
+                                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                                 disabled={currentPage === totalPages}
                               >
                                 <ChevronRight className="h-4 w-4" />
@@ -333,6 +330,5 @@ export default function CustomerDetail() {
           )}
         </div>
       </div>
-    </Layout>
   );
 }
