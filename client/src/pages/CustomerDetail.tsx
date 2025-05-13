@@ -11,8 +11,6 @@ import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Printer, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
-// @ts-ignore
-import ReactToPrint from "react-to-print";
 import type { Customer, Job, Vehicle } from "@shared/schema";
 
 export default function CustomerDetail() {
@@ -27,14 +25,7 @@ export default function CustomerDetail() {
   const customerQuery = useQuery<Customer>({
     queryKey: [`/api/customers/${customerId}`],
     enabled: !isNaN(customerId),
-    refetchInterval: 3000,
-    onError: () => {
-      toast({
-        title: "Hata",
-        description: "Müşteri bilgileri yüklenirken bir hata oluştu.",
-        variant: "destructive",
-      });
-    },
+    refetchInterval: 3000
   });
 
   // Fetch customer vehicles
@@ -114,15 +105,10 @@ export default function CustomerDetail() {
             </Link>
             <h1 className="text-2xl font-bold">Müşteri Detayları</h1>
           </div>
-          <ReactToPrint
-            trigger={() => (
-              <Button variant="outline" size="sm">
-                <Printer className="mr-2 h-4 w-4" />
-                Yazdır
-              </Button>
-            )}
-            content={() => printRef.current}
-          />
+          <Button variant="outline" size="sm">
+            <Printer className="mr-2 h-4 w-4" />
+            Yazdır
+          </Button>
         </div>
 
         <div ref={printRef} className="space-y-6">

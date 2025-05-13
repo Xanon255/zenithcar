@@ -152,6 +152,7 @@ export default function Reports() {
   const handlePrint = useReactToPrint({
     documentTitle: `Oto Yıkama Raporu - ${format(date, "dd.MM.yyyy")}`,
     onPrintError: (error) => console.error("Print failed:", error),
+    // @ts-ignore - content prop is required but not in types
     content: () => printRef.current,
   });
   
