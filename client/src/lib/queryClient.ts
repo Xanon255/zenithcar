@@ -45,13 +45,13 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      staleTime: 0, // Her zaman en güncel veriyi al
+      refetchInterval: 3000, // Her 3 saniyede bir yenile
+      refetchOnWindowFocus: true, // Sayfa odağı değişince yenile
+      retry: true, // Hatalarda yeniden dene
     },
     mutations: {
-      retry: false,
+      retry: true, // Mutasyon hatalarında yeniden dene
     },
   },
 });

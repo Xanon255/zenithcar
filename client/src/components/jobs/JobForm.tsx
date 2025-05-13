@@ -468,8 +468,10 @@ export default function JobForm({ jobId }: JobFormProps) {
       }
       
       // İnvalidate all relevant queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats/daily"] });
+      // Tüm ilgili sorguları geçersiz kıl ve yeniden yükle
+      queryClient.invalidateQueries();
+      queryClient.refetchQueries({ queryKey: ["/api/jobs"] });
+      queryClient.refetchQueries({ queryKey: ["/api/stats/daily"] });
       
       toast({
         title: "Başarılı",
