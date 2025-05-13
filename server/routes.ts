@@ -473,6 +473,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const startDateParam = req.query.startDate as string;
     const endDateParam = req.query.endDate as string;
     
+    // Default to current month if no dates provided
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    const startDate = startDateParam ? new Date(startDateParam) : firstDayOfMonth;
+    const endDate = endDateParam ? new Date(endDateParam) : lastDayOfMonth;
+    
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return res.status(400).json({ message: "Invalid date format" });
+    }
+    
+    const stats = await storage.getNetProfit(startDate, endDate);
+    res.json(stats);
+  });
+  
+  // Expenses API
+  app.get("/api/expenses", async (req, res) => {
+    const expenses = await storage.getExpenses();
+    res.json(expenses);
+  });
+  
+  app.get("/api/expenses/category/:category", async (req, res) => {
+    const category = req.params.category;
+    const expenses = await storage.getExpensesByCategory(category);
+    res.json(expenses);
+  });
+  
+  app.get("/api/expenses/date-range", async (req, res) => {
+    const startDateParam = req.query.startDate as string;
+    const endDateParam = req.query.endDate as string;
+    
     if (!startDateParam || !endDateParam) {
       return res.status(400).json({ message: "Start date and end date are required" });
     }
@@ -484,8 +516,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ message: "Invalid date format" });
     }
     
-    const stats = await storage.getNetProfit(startDate, endDate);
-    res.json(stats);
+    const expenses = await storage.getExpensesByDateRange(startDate, endDate);
+    res.json(expenses);
+  });
+  
+  app.get("/api/expenses/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid expense ID" });
+    }
+    
+    const expense = await storage.getExpense(id);
+    if (!expense) {
+      return res.status(404).json({ message: "Expense not found" });
+    }
+    
+    res.json(expense);
+  });
+  
+  app.post("/api/expenses", async (req, res) => {
+    try {
+      const data = insertExpenseSchema.parse(req.body);
+      const expense = await storage.createExpense(data);
+      res.status(201).json(expense);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid expense data", errors: error.errors });
+      }
+      res.status(500).json({ message: "An error occurred while creating the expense" });
+    }
+  });
+  
+  app.put("/api/expenses/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid expense ID" });
+    }
+    
+    try {
+      const data = insertExpenseSchema.partial().parse(req.body);
+      const expense = await storage.updateExpense(id, data);
+      if (!expense) {
+        return res.status(404).json({ message: "Expense not found" });
+      }
+      
+      res.json(expense);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid expense data", errors: error.errors });
+      }
+      res.status(500).json({ message: "An error occurred while updating the expense" });
+    }
+  });
+  
+  app.delete("/api/expenses/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid expense ID" });
+    }
+    
+    const success = await storage.deleteExpense(id);
+    if (!success) {
+      return res.status(404).json({ message: "Expense not found" });
+    }
+    
+    res.status(204).end();
   });
 
   const httpServer = createServer(app);
