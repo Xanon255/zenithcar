@@ -175,22 +175,26 @@ export default function JobForm({ jobId }: JobFormProps) {
       const vehicle = vehiclesQuery.data.find(v => v.id === job.vehicleId);
       
       if (vehicle) {
+        // İlk olarak müşteriyi ayarla, bu araç listesini güncelleyecek
         setSelectedCustomerId(vehicle.customerId);
         
         // Cast status and payment method to the proper enum types to fix type issues
         const typedStatus = job.status as "bekliyor" | "devam_ediyor" | "tamamlandi" | "iptal";
         const typedPaymentMethod = job.paymentMethod as "nakit" | "kredi_karti" | "havale_eft";
         
-        form.reset({
-          vehicleId: job.vehicleId,
-          customerId: job.customerId,
-          totalAmount: job.totalAmount.toString(),
-          paidAmount: job.paidAmount.toString(),
-          status: typedStatus,
-          paymentMethod: typedPaymentMethod || "nakit",
-          notes: job.notes,
-          selectedServices: jobServicesQuery.data.map(s => s.id),
-        });
+        // Hafif gecikme ekleyerek, müşteri değişikliğinin arayüzü etkilemesini sağlıyoruz
+        setTimeout(() => {
+          form.reset({
+            customerId: vehicle.customerId,
+            vehicleId: job.vehicleId,
+            totalAmount: job.totalAmount.toString(),
+            paidAmount: job.paidAmount.toString(),
+            status: typedStatus,
+            paymentMethod: typedPaymentMethod || "nakit",
+            notes: job.notes,
+            selectedServices: jobServicesQuery.data.map(s => s.id),
+          });
+        }, 100);
       }
     }
   }, [jobId, jobQuery.data, vehiclesQuery.data, customersQuery.data, jobServicesQuery.data, form]);
