@@ -43,6 +43,7 @@ export default function Dashboard() {
   const statsQuery = useQuery<DailyStats>({
     queryKey: [`/api/stats/daily?date=${format(today, "yyyy-MM-dd")}`],
     refetchInterval: 3000, // Her 3 saniyede bir otomatik yenileme
+    staleTime: 0, // Her zaman en güncel veriyi alalım
   });
   
   const handlePrint = () => {

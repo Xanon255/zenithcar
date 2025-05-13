@@ -31,18 +31,24 @@ export default function JobsTable({ title, date }: JobsTableProps) {
   const jobsQuery = useQuery<Job[]>({
     queryKey: [date ? `/api/jobs?date=${date}` : "/api/jobs"],
     refetchInterval: 3000, // Her 3 saniyede bir otomatik yenileme
+    staleTime: 0, // Her zaman en güncel veriyi alalım
+    cacheTime: 0, // Önbelleğe alma
   });
   
   // Fetch customers for displaying names
   const customersQuery = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
     refetchInterval: 3000, // Her 3 saniyede bir otomatik yenileme
+    staleTime: 0, // Her zaman en güncel veriyi alalım
+    cacheTime: 0, // Önbelleğe alma
   });
   
   // Fetch vehicles for displaying details
   const vehiclesQuery = useQuery<Vehicle[]>({
     queryKey: ["/api/vehicles"],
     refetchInterval: 3000, // Her 3 saniyede bir otomatik yenileme
+    staleTime: 0, // Her zaman en güncel veriyi alalım
+    cacheTime: 0, // Önbelleğe alma
   });
   
   const isLoading = jobsQuery.isLoading || customersQuery.isLoading || vehiclesQuery.isLoading;
