@@ -82,9 +82,12 @@ export default function Reports() {
   const formattedStartDate = format(dateRange.start, "yyyy-MM-dd");
   const formattedEndDate = format(dateRange.end, "yyyy-MM-dd");
   
+  // Bugünün tarihini ayarla
+  const today = useMemo(() => new Date(), []);
+
   // Fetch statistics for the date range
   const statsQuery = useQuery<DailyStats>({
-    queryKey: [`/api/stats/daily?date=${format(date, "yyyy-MM-dd")}`],
+    queryKey: [`/api/stats/daily?date=${format(today, "yyyy-MM-dd")}`],
     refetchInterval: 5000, // Her 5 saniyede bir yenile
     staleTime: 0, // Her zaman güncel veri al
   });
@@ -105,36 +108,50 @@ export default function Reports() {
   
   // Fetch net profit stats
   const netProfitQuery = useQuery<NetProfitStats>({
-    queryKey: [`/api/stats/net-profit?startDate=${formattedStartDate}&endDate=${formattedEndDate}`],
+    queryKey: [`/api/stats/net-profit?startDate=${format(today, "yyyy-MM-01")}&endDate=${format(new Date(today.getFullYear(), today.getMonth() + 1, 0), "yyyy-MM-dd")}`],
     refetchInterval: 5000, // Her 5 saniyede bir yenile
     staleTime: 0, // Her zaman güncel veri al
   });
   
   // Create daily revenue data based on actual jobs
-  const dailyRevenueData = [
-    { date: "Pazartesi", total: 0 },
-    { date: "Salı", total: 0 },
-    { date: "Çarşamba", total: 0 },
-    { date: "Perşembe", total: 0 },
-    { date: "Cuma", total: 0 },
-    { date: "Cumartesi", total: 0 },
-    { date: "Pazar", total: 0 }
-  ];
-  
-  // Populate daily revenue from actual job data if available
-  if (jobsQuery.data && jobsQuery.data.length > 0) {
-    const dayMap = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+  const dailyRevenueData = useMemo(() => {
+    const baseData = [
+      { date: "Pazartesi", total: 0 },
+      { date: "Salı", total: 0 },
+      { date: "Çarşamba", total: 0 },
+      { date: "Perşembe", total: 0 },
+      { date: "Cuma", total: 0 },
+      { date: "Cumartesi", total: 0 },
+      { date: "Pazar", total: 0 }
+    ];
     
-    jobsQuery.data.forEach(job => {
-      const jobDate = new Date(job.createdAt);
-      const dayName = dayMap[jobDate.getDay()];
-      const dayData = dailyRevenueData.find(item => item.date === dayName);
+    // Populate daily revenue from actual job data if available
+    if (jobsQuery.data && jobsQuery.data.length > 0) {
+      const dayMap = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
       
-      if (dayData) {
-        dayData.total += Number(job.totalAmount);
-      }
-    });
-  }
+      // Derin kopyasını alalım, orijinal veriyi bozmamak için
+      const result = [...baseData];
+      
+      jobsQuery.data.forEach(job => {
+        if (job.status !== 'iptal') { // İptal edilen işleri dahil etme
+          const jobDate = new Date(job.createdAt);
+          const dayName = dayMap[jobDate.getDay()];
+          const index = result.findIndex(item => item.date === dayName);
+          
+          if (index !== -1) {
+            result[index] = {
+              ...result[index],
+              total: result[index].total + Number(job.totalAmount || 0)
+            };
+          }
+        }
+      });
+      
+      return result;
+    }
+    
+    return baseData;
+  }, [jobsQuery.data]);
   
   // Create service distribution data based on jobs
   const servicesQuery = useQuery<any[]>({
