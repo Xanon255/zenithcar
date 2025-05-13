@@ -1,13 +1,17 @@
+import { db } from "./db";
 import { 
-  customers, Customer, InsertCustomer,
-  vehicles, Vehicle, InsertVehicle,
-  services, Service, InsertService,
-  jobs, Job, InsertJob,
-  jobServices, JobService, InsertJobService,
-  users, User, InsertUser
+  customers, vehicles, services, jobs, jobServices, users, expenses, customerAnalytics,
+  type Customer, type InsertCustomer, 
+  type Vehicle, type InsertVehicle, 
+  type Service, type InsertService, 
+  type Job, type InsertJob, 
+  type JobService, type InsertJobService, 
+  type User, type InsertUser,
+  type Expense, type InsertExpense,
+  type CustomerAnalytic
 } from "@shared/schema";
+import { eq, and, desc, count, sum, max, isNull, sql } from "drizzle-orm";
 
-// Define the storage interface
 export interface IStorage {
   // Customer methods
   getCustomers(): Promise<Customer[]>;
@@ -15,6 +19,7 @@ export interface IStorage {
   createCustomer(customer: InsertCustomer): Promise<Customer>;
   updateCustomer(id: number, customer: Partial<InsertCustomer>): Promise<Customer | undefined>;
   deleteCustomer(id: number): Promise<boolean>;
+  getCustomerAnalytics(customerId: number): Promise<CustomerAnalytic | undefined>;
   
   // Vehicle methods
   getVehicles(): Promise<Vehicle[]>;
@@ -35,6 +40,7 @@ export interface IStorage {
   // Job methods
   getJobs(): Promise<Job[]>;
   getJobsByDate(date: Date): Promise<Job[]>;
+  getJobsByCustomer(customerId: number): Promise<Job[]>;
   getJob(id: number): Promise<Job | undefined>;
   createJob(job: InsertJob): Promise<Job>;
   updateJob(id: number, job: Partial<InsertJob>): Promise<Job | undefined>;
@@ -53,6 +59,15 @@ export interface IStorage {
   updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
   deleteUser(id: number): Promise<boolean>;
 
+  // Expense methods
+  getExpenses(): Promise<Expense[]>;
+  getExpensesByCategory(category: string): Promise<Expense[]>;
+  getExpensesByDateRange(startDate: Date, endDate: Date): Promise<Expense[]>;
+  getExpense(id: number): Promise<Expense | undefined>;
+  createExpense(expense: InsertExpense): Promise<Expense>;
+  updateExpense(id: number, expense: Partial<InsertExpense>): Promise<Expense | undefined>;
+  deleteExpense(id: number): Promise<boolean>;
+
   // Statistics methods
   getDailyStats(date: Date): Promise<{
     totalAmount: number;
@@ -60,300 +75,337 @@ export interface IStorage {
     totalJobs: number;
     pendingPayments: number;
   }>;
+  
+  getPaymentMethodStats(): Promise<{
+    method: string;
+    count: number;
+    total: number;
+  }[]>;
+  
+  getNetProfit(startDate: Date, endDate: Date): Promise<{
+    totalRevenue: number;
+    totalExpenses: number;
+    netProfit: number;
+  }>;
 }
 
-export class MemStorage implements IStorage {
-  private customers: Map<number, Customer>;
-  private vehicles: Map<number, Vehicle>;
-  private services: Map<number, Service>;
-  private jobs: Map<number, Job>;
-  private jobServices: Map<string, JobService>;
-  private users: Map<number, User>;
-  
-  private customerIdCounter: number;
-  private vehicleIdCounter: number;
-  private serviceIdCounter: number;
-  private jobIdCounter: number;
-  private userIdCounter: number;
-  
-  constructor() {
-    this.customers = new Map();
-    this.vehicles = new Map();
-    this.services = new Map();
-    this.jobs = new Map();
-    this.jobServices = new Map();
-    this.users = new Map();
-    
-    this.customerIdCounter = 1;
-    this.vehicleIdCounter = 1;
-    this.serviceIdCounter = 1;
-    this.jobIdCounter = 1;
-    this.userIdCounter = 1;
-    
-    // Initialize with some default services
-    this.seedServices();
-    this.seedUsers();
-  }
-  
-  private seedServices() {
-    const defaultServices = [
-      { id: this.serviceIdCounter++, name: "Dış Yıkama", price: 50, description: "Aracın dış yıkaması" },
-      { id: this.serviceIdCounter++, name: "İç Temizlik", price: 70, description: "Aracın iç temizliği" },
-      { id: this.serviceIdCounter++, name: "Motor Yıkama", price: 100, description: "Motor bölümü temizliği" },
-      { id: this.serviceIdCounter++, name: "Pasta Cila", price: 150, description: "Araç dış yüzeyi için pasta cila işlemi" },
-      { id: this.serviceIdCounter++, name: "Detaylı İç Temizlik", price: 200, description: "Kapsamlı iç temizlik" },
-      { id: this.serviceIdCounter++, name: "Seramik Kaplama", price: 1500, description: "Araç dış yüzeyi için koruyucu seramik kaplama" },
-    ];
-    
-    for (const service of defaultServices) {
-      this.services.set(service.id, service);
-    }
-  }
-  
-  private seedUsers() {
-    const defaultUser = {
-      id: this.userIdCounter++,
-      username: "admin",
-      password: "admin123", // In a real app, this would be hashed
-      fullName: "Demo Admin",
-      isAdmin: true
-    };
-    
-    this.users.set(defaultUser.id, defaultUser);
-  }
-  
+export class DatabaseStorage implements IStorage {
   // Customer methods
   async getCustomers(): Promise<Customer[]> {
-    return Array.from(this.customers.values());
+    return await db.select().from(customers).orderBy(desc(customers.id));
   }
-  
+
   async getCustomer(id: number): Promise<Customer | undefined> {
-    return this.customers.get(id);
+    const result = await db.select().from(customers).where(eq(customers.id, id));
+    return result[0];
   }
-  
+
   async createCustomer(customer: InsertCustomer): Promise<Customer> {
-    const id = this.customerIdCounter++;
-    const newCustomer: Customer = {
-      id,
-      ...customer,
-      createdAt: new Date()
-    };
-    this.customers.set(id, newCustomer);
-    return newCustomer;
+    const result = await db.insert(customers).values(customer).returning();
+    return result[0];
   }
-  
+
   async updateCustomer(id: number, customer: Partial<InsertCustomer>): Promise<Customer | undefined> {
-    const existingCustomer = this.customers.get(id);
-    if (!existingCustomer) return undefined;
-    
-    const updatedCustomer = {
-      ...existingCustomer,
-      ...customer
-    };
-    this.customers.set(id, updatedCustomer);
-    return updatedCustomer;
+    const result = await db.update(customers).set(customer).where(eq(customers.id, id)).returning();
+    return result[0];
   }
-  
+
   async deleteCustomer(id: number): Promise<boolean> {
-    return this.customers.delete(id);
+    try {
+      await db.delete(customers).where(eq(customers.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting customer:", error);
+      return false;
+    }
   }
-  
+
+  async getCustomerAnalytics(customerId: number): Promise<CustomerAnalytic | undefined> {
+    // Calculate customer analytics on the fly
+    const totalSpentResult = await db
+      .select({
+        totalSpent: sum(jobs.totalAmount)
+      })
+      .from(jobs)
+      .where(eq(jobs.customerId, customerId));
+      
+    const jobCountResult = await db
+      .select({
+        jobCount: count()
+      })
+      .from(jobs)
+      .where(eq(jobs.customerId, customerId));
+      
+    const lastVisitResult = await db
+      .select({
+        lastVisit: max(jobs.createdAt)
+      })
+      .from(jobs)
+      .where(eq(jobs.customerId, customerId));
+      
+    const totalSpent = totalSpentResult[0]?.totalSpent || 0;
+    const jobCount = jobCountResult[0]?.jobCount || 0;
+    const lastVisit = lastVisitResult[0]?.lastVisit;
+    
+    return {
+      customerId: customerId,
+      totalSpent: totalSpent,
+      jobCount: jobCount,
+      lastVisit: lastVisit
+    };
+  }
+
   // Vehicle methods
   async getVehicles(): Promise<Vehicle[]> {
-    return Array.from(this.vehicles.values());
+    return await db.select().from(vehicles).orderBy(desc(vehicles.id));
   }
-  
+
   async getVehiclesByCustomer(customerId: number): Promise<Vehicle[]> {
-    return Array.from(this.vehicles.values()).filter(
-      vehicle => vehicle.customerId === customerId
-    );
+    return await db.select().from(vehicles).where(eq(vehicles.customerId, customerId));
   }
-  
+
   async getVehicle(id: number): Promise<Vehicle | undefined> {
-    return this.vehicles.get(id);
+    const result = await db.select().from(vehicles).where(eq(vehicles.id, id));
+    return result[0];
   }
-  
+
   async getVehicleByPlate(plate: string): Promise<Vehicle | undefined> {
-    return Array.from(this.vehicles.values()).find(
-      vehicle => vehicle.plate.toLowerCase() === plate.toLowerCase()
-    );
+    const result = await db.select().from(vehicles).where(eq(vehicles.plate, plate));
+    return result[0];
   }
-  
+
   async createVehicle(vehicle: InsertVehicle): Promise<Vehicle> {
-    const id = this.vehicleIdCounter++;
-    const newVehicle: Vehicle = {
-      id,
-      ...vehicle,
-      createdAt: new Date()
-    };
-    this.vehicles.set(id, newVehicle);
-    return newVehicle;
+    const result = await db.insert(vehicles).values(vehicle).returning();
+    return result[0];
   }
-  
+
   async updateVehicle(id: number, vehicle: Partial<InsertVehicle>): Promise<Vehicle | undefined> {
-    const existingVehicle = this.vehicles.get(id);
-    if (!existingVehicle) return undefined;
-    
-    const updatedVehicle = {
-      ...existingVehicle,
-      ...vehicle
-    };
-    this.vehicles.set(id, updatedVehicle);
-    return updatedVehicle;
+    const result = await db.update(vehicles).set(vehicle).where(eq(vehicles.id, id)).returning();
+    return result[0];
   }
-  
+
   async deleteVehicle(id: number): Promise<boolean> {
-    return this.vehicles.delete(id);
+    try {
+      await db.delete(vehicles).where(eq(vehicles.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting vehicle:", error);
+      return false;
+    }
   }
-  
+
   // Service methods
   async getServices(): Promise<Service[]> {
-    return Array.from(this.services.values());
+    return await db.select().from(services).orderBy(services.name);
   }
-  
+
   async getService(id: number): Promise<Service | undefined> {
-    return this.services.get(id);
+    const result = await db.select().from(services).where(eq(services.id, id));
+    return result[0];
   }
-  
+
   async createService(service: InsertService): Promise<Service> {
-    const id = this.serviceIdCounter++;
-    const newService: Service = {
-      id,
-      ...service
-    };
-    this.services.set(id, newService);
-    return newService;
+    const result = await db.insert(services).values(service).returning();
+    return result[0];
   }
-  
+
   async updateService(id: number, service: Partial<InsertService>): Promise<Service | undefined> {
-    const existingService = this.services.get(id);
-    if (!existingService) return undefined;
-    
-    const updatedService = {
-      ...existingService,
-      ...service
-    };
-    this.services.set(id, updatedService);
-    return updatedService;
+    const result = await db.update(services).set(service).where(eq(services.id, id)).returning();
+    return result[0];
   }
-  
+
   async deleteService(id: number): Promise<boolean> {
-    return this.services.delete(id);
+    try {
+      await db.delete(services).where(eq(services.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting service:", error);
+      return false;
+    }
   }
-  
+
   // Job methods
   async getJobs(): Promise<Job[]> {
-    return Array.from(this.jobs.values());
+    return await db.select().from(jobs).orderBy(desc(jobs.createdAt));
   }
-  
+
   async getJobsByDate(date: Date): Promise<Job[]> {
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
+    const startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0);
     
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999);
     
-    return Array.from(this.jobs.values()).filter(job => {
-      return job.createdAt >= startOfDay && job.createdAt <= endOfDay;
-    });
+    return await db
+      .select()
+      .from(jobs)
+      .where(
+        and(
+          sql`${jobs.createdAt} >= ${startDate}`,
+          sql`${jobs.createdAt} <= ${endDate}`
+        )
+      )
+      .orderBy(desc(jobs.createdAt));
   }
-  
+
+  async getJobsByCustomer(customerId: number): Promise<Job[]> {
+    return await db
+      .select()
+      .from(jobs)
+      .where(eq(jobs.customerId, customerId))
+      .orderBy(desc(jobs.createdAt));
+  }
+
   async getJob(id: number): Promise<Job | undefined> {
-    return this.jobs.get(id);
+    const result = await db.select().from(jobs).where(eq(jobs.id, id));
+    return result[0];
   }
-  
+
   async createJob(job: InsertJob): Promise<Job> {
-    const id = this.jobIdCounter++;
-    const newJob: Job = {
-      id,
-      ...job,
-      createdAt: new Date()
-    };
-    this.jobs.set(id, newJob);
-    return newJob;
+    const result = await db.insert(jobs).values(job).returning();
+    return result[0];
   }
-  
+
   async updateJob(id: number, job: Partial<InsertJob>): Promise<Job | undefined> {
-    const existingJob = this.jobs.get(id);
-    if (!existingJob) return undefined;
-    
-    const updatedJob = {
-      ...existingJob,
-      ...job
-    };
-    this.jobs.set(id, updatedJob);
-    return updatedJob;
+    const result = await db.update(jobs).set(job).where(eq(jobs.id, id)).returning();
+    return result[0];
   }
-  
+
   async deleteJob(id: number): Promise<boolean> {
-    // Remove all associated job services first
-    Array.from(this.jobServices.entries())
-      .filter(([key, value]) => value.jobId === id)
-      .forEach(([key]) => this.jobServices.delete(key));
-    
-    return this.jobs.delete(id);
+    try {
+      // First delete related job services
+      await db.delete(jobServices).where(eq(jobServices.jobId, id));
+      // Then delete the job
+      await db.delete(jobs).where(eq(jobs.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting job:", error);
+      return false;
+    }
   }
-  
+
   // JobService methods
   async getJobServices(jobId: number): Promise<Service[]> {
-    const serviceIds = Array.from(this.jobServices.values())
-      .filter(js => js.jobId === jobId)
-      .map(js => js.serviceId);
-    
-    return serviceIds.map(id => this.services.get(id)!).filter(Boolean);
+    const result = await db
+      .select({
+        id: services.id,
+        name: services.name,
+        price: services.price,
+        description: services.description
+      })
+      .from(jobServices)
+      .innerJoin(services, eq(jobServices.serviceId, services.id))
+      .where(eq(jobServices.jobId, jobId));
+      
+    return result;
   }
-  
+
   async addJobService(jobService: InsertJobService): Promise<JobService> {
-    const key = `${jobService.jobId}-${jobService.serviceId}`;
-    this.jobServices.set(key, jobService);
-    return jobService;
+    const result = await db.insert(jobServices).values(jobService).returning();
+    return result[0];
   }
-  
+
   async removeJobService(jobId: number, serviceId: number): Promise<boolean> {
-    const key = `${jobId}-${serviceId}`;
-    return this.jobServices.delete(key);
+    try {
+      await db
+        .delete(jobServices)
+        .where(
+          and(
+            eq(jobServices.jobId, jobId),
+            eq(jobServices.serviceId, serviceId)
+          )
+        );
+      return true;
+    } catch (error) {
+      console.error("Error removing job service:", error);
+      return false;
+    }
   }
-  
+
   // User methods
   async getUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
+    return await db.select().from(users);
   }
-  
+
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const result = await db.select().from(users).where(eq(users.id, id));
+    return result[0];
   }
-  
+
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      user => user.username.toLowerCase() === username.toLowerCase()
-    );
+    const result = await db.select().from(users).where(eq(users.username, username));
+    return result[0];
   }
-  
+
   async createUser(user: InsertUser): Promise<User> {
-    const id = this.userIdCounter++;
-    const newUser: User = {
-      id,
-      ...user,
-      isAdmin: false
-    };
-    this.users.set(id, newUser);
-    return newUser;
+    const result = await db.insert(users).values(user).returning();
+    return result[0];
   }
-  
+
   async updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined> {
-    const existingUser = this.users.get(id);
-    if (!existingUser) return undefined;
-    
-    const updatedUser = {
-      ...existingUser,
-      ...user
-    };
-    this.users.set(id, updatedUser);
-    return updatedUser;
+    const result = await db.update(users).set(user).where(eq(users.id, id)).returning();
+    return result[0];
   }
-  
+
   async deleteUser(id: number): Promise<boolean> {
-    return this.users.delete(id);
+    try {
+      await db.delete(users).where(eq(users.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      return false;
+    }
+  }
+
+  // Expense methods
+  async getExpenses(): Promise<Expense[]> {
+    return await db.select().from(expenses).orderBy(desc(expenses.date));
+  }
+
+  async getExpensesByCategory(category: string): Promise<Expense[]> {
+    return await db
+      .select()
+      .from(expenses)
+      .where(eq(expenses.category, category))
+      .orderBy(desc(expenses.date));
+  }
+
+  async getExpensesByDateRange(startDate: Date, endDate: Date): Promise<Expense[]> {
+    return await db
+      .select()
+      .from(expenses)
+      .where(
+        and(
+          sql`${expenses.date} >= ${startDate}`,
+          sql`${expenses.date} <= ${endDate}`
+        )
+      )
+      .orderBy(desc(expenses.date));
+  }
+
+  async getExpense(id: number): Promise<Expense | undefined> {
+    const result = await db.select().from(expenses).where(eq(expenses.id, id));
+    return result[0];
+  }
+
+  async createExpense(expense: InsertExpense): Promise<Expense> {
+    const result = await db.insert(expenses).values(expense).returning();
+    return result[0];
+  }
+
+  async updateExpense(id: number, expense: Partial<InsertExpense>): Promise<Expense | undefined> {
+    const result = await db.update(expenses).set(expense).where(eq(expenses.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteExpense(id: number): Promise<boolean> {
+    try {
+      await db.delete(expenses).where(eq(expenses.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting expense:", error);
+      return false;
+    }
   }
 
   // Statistics methods
@@ -363,20 +415,96 @@ export class MemStorage implements IStorage {
     totalJobs: number;
     pendingPayments: number;
   }> {
-    const jobsForDate = await this.getJobsByDate(date);
+    const startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0);
     
-    const totalAmount = jobsForDate.reduce((sum, job) => sum + Number(job.totalAmount), 0);
-    const totalPaid = jobsForDate.reduce((sum, job) => sum + Number(job.paidAmount), 0);
-    const totalJobs = jobsForDate.length;
-    const pendingPayments = jobsForDate.filter(job => Number(job.paidAmount) < Number(job.totalAmount)).length;
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999);
+    
+    const jobsResult = await db
+      .select({
+        totalAmount: sum(jobs.totalAmount),
+        totalPaid: sum(jobs.paidAmount),
+        totalJobs: count(),
+      })
+      .from(jobs)
+      .where(
+        and(
+          sql`${jobs.createdAt} >= ${startDate}`,
+          sql`${jobs.createdAt} <= ${endDate}`
+        )
+      );
+      
+    const result = jobsResult[0];
     
     return {
-      totalAmount,
-      totalPaid,
-      totalJobs,
-      pendingPayments
+      totalAmount: result?.totalAmount || 0,
+      totalPaid: result?.totalPaid || 0,
+      totalJobs: result?.totalJobs || 0,
+      pendingPayments: (result?.totalAmount || 0) - (result?.totalPaid || 0)
+    };
+  }
+  
+  async getPaymentMethodStats(): Promise<{
+    method: string;
+    count: number;
+    total: number;
+  }[]> {
+    const result = await db
+      .select({
+        method: jobs.paymentMethod,
+        count: count(),
+        total: sum(jobs.paidAmount)
+      })
+      .from(jobs)
+      .where(sql`${jobs.paidAmount} > 0`)
+      .groupBy(jobs.paymentMethod);
+      
+    return result.map(item => ({
+      method: item.method,
+      count: Number(item.count) || 0,
+      total: Number(item.total) || 0
+    }));
+  }
+  
+  async getNetProfit(startDate: Date, endDate: Date): Promise<{
+    totalRevenue: number;
+    totalExpenses: number;
+    netProfit: number;
+  }> {
+    const revenueResult = await db
+      .select({
+        totalRevenue: sum(jobs.totalAmount)
+      })
+      .from(jobs)
+      .where(
+        and(
+          sql`${jobs.createdAt} >= ${startDate}`,
+          sql`${jobs.createdAt} <= ${endDate}`
+        )
+      );
+      
+    const expensesResult = await db
+      .select({
+        totalExpenses: sum(expenses.amount)
+      })
+      .from(expenses)
+      .where(
+        and(
+          sql`${expenses.date} >= ${startDate}`,
+          sql`${expenses.date} <= ${endDate}`
+        )
+      );
+      
+    const totalRevenue = Number(revenueResult[0]?.totalRevenue) || 0;
+    const totalExpenses = Number(expensesResult[0]?.totalExpenses) || 0;
+    
+    return {
+      totalRevenue,
+      totalExpenses,
+      netProfit: totalRevenue - totalExpenses
     };
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

@@ -50,6 +50,10 @@ export const insertServiceSchema = createInsertSchema(services).omit({
   id: true,
 });
 
+// Define payment methods enum
+export const paymentMethodEnum = z.enum(["nakit", "kredi_karti", "havale_eft"]);
+export type PaymentMethod = z.infer<typeof paymentMethodEnum>;
+
 // Jobs table
 export const jobs = pgTable("jobs", {
   id: serial("id").primaryKey(),
@@ -57,6 +61,7 @@ export const jobs = pgTable("jobs", {
   customerId: integer("customer_id").notNull(),
   totalAmount: numeric("total_amount").notNull(),
   paidAmount: numeric("paid_amount").default("0").notNull(),
+  paymentMethod: text("payment_method").default("nakit").notNull(), // nakit, kredi_karti, havale_eft
   status: text("status").notNull().default("bekliyor"), // bekliyor, devam_ediyor, tamamlandi, iptal
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -93,6 +98,28 @@ export const insertUserSchema = createInsertSchema(users).omit({
   isAdmin: true,
 });
 
+// Expenses table
+export const expenses = pgTable("expenses", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  amount: numeric("amount").notNull(),
+  category: text("category").notNull(), // malzeme, kira, su, elektrik, personel, diğer
+  date: timestamp("date").defaultNow().notNull(),
+  notes: text("notes"),
+});
+
+export const insertExpenseSchema = createInsertSchema(expenses).omit({
+  id: true,
+});
+
+// Customer Analysis view for aggregating customer spending
+export const customerAnalytics = pgTable("customer_analytics_view", {
+  customerId: integer("customer_id").notNull(),
+  totalSpent: numeric("total_spent").notNull(),
+  jobCount: integer("job_count").notNull(),
+  lastVisit: timestamp("last_visit"),
+});
+
 // Types for our schema
 export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
@@ -112,6 +139,15 @@ export type InsertJobService = z.infer<typeof insertJobServiceSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
+export type Expense = typeof expenses.$inferSelect;
+export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+
+export type CustomerAnalytic = typeof customerAnalytics.$inferSelect;
+
 // Define zod schemas for frontend validation
 export const jobStatusEnum = z.enum(["bekliyor", "devam_ediyor", "tamamlandi", "iptal"]);
 export type JobStatus = z.infer<typeof jobStatusEnum>;
+
+// Define expense categories enum
+export const expenseCategoryEnum = z.enum(["malzeme", "kira", "su", "elektrik", "personel", "diger"]);
+export type ExpenseCategory = z.infer<typeof expenseCategoryEnum>;
