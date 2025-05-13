@@ -71,11 +71,12 @@ export default function Expenses() {
   });
   
   // Create a form schema
-  const formSchema = insertExpenseSchema.extend({
-    category: expenseCategoryEnum,
-    amount: z.string().min(1, "Tutar zorunludur")
-      .transform(val => Number(val) || 0),
-    expenseDate: z.string().transform(val => new Date(val)),
+  const formSchema = z.object({
+    name: z.string().min(1, "Gider adı zorunludur"),
+    amount: z.string().min(1, "Tutar zorunludur"),
+    category: z.enum(["malzeme", "kira", "su", "elektrik", "personel", "diger"]),
+    notes: z.string().optional(),
+    expenseDate: z.string(),
   });
   
   // Define the form
@@ -95,7 +96,7 @@ export default function Expenses() {
     form.reset({
       name: "",
       amount: "",
-      category: "malzeme",
+      category: "malzeme" as const,
       notes: "",
       expenseDate: format(new Date(), "yyyy-MM-dd"),
     });
@@ -108,7 +109,7 @@ export default function Expenses() {
     form.reset({
       name: expense.name,
       amount: expense.amount.toString(),
-      category: expense.category,
+      category: expense.category as "malzeme" | "kira" | "su" | "elektrik" | "personel" | "diger",
       notes: expense.notes || "",
       expenseDate: format(new Date(expense.date), "yyyy-MM-dd"),
     });
@@ -118,20 +119,18 @@ export default function Expenses() {
   // Create expense mutation
   const createExpenseMutation = useMutation({
     mutationFn: async (data: z.infer<typeof formSchema>) => {
-      console.log("Gönderilen veri:", {
+      // Veri dönüşümleri
+      const transformedData = {
         name: data.name,
-        amount: data.amount,
+        amount: parseFloat(data.amount),
         category: data.category,
-        notes: data.notes,
-        date: data.expenseDate,
-      });
-      const res = await apiRequest("POST", "/api/expenses", {
-        name: data.name,
-        amount: data.amount,
-        category: data.category,
-        notes: data.notes,
-        date: data.expenseDate,
-      });
+        notes: data.notes || "",
+        date: new Date(data.expenseDate)
+      };
+      
+      console.log("Gönderilen veri:", transformedData);
+      
+      const res = await apiRequest("POST", "/api/expenses", transformedData);
       return res.json();
     },
     onSuccess: () => {
@@ -156,13 +155,16 @@ export default function Expenses() {
   // Update expense mutation
   const updateExpenseMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: z.infer<typeof formSchema> }) => {
-      const res = await apiRequest("PUT", `/api/expenses/${id}`, {
+      // Veri dönüşümleri
+      const transformedData = {
         name: data.name,
-        amount: data.amount,
+        amount: parseFloat(data.amount),
         category: data.category,
-        notes: data.notes,
-        date: data.expenseDate,
-      });
+        notes: data.notes || "",
+        date: new Date(data.expenseDate)
+      };
+      
+      const res = await apiRequest("PUT", `/api/expenses/${id}`, transformedData);
       return res.json();
     },
     onSuccess: () => {
