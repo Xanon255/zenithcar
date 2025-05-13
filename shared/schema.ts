@@ -14,6 +14,8 @@ export const customers = pgTable("customers", {
 export const insertCustomerSchema = createInsertSchema(customers).omit({
   id: true,
   createdAt: true,
+}).extend({
+  name: z.string().min(1, "Müşteri adı zorunludur"),
 });
 
 // Vehicles table
@@ -30,6 +32,10 @@ export const vehicles = pgTable("vehicles", {
 export const insertVehicleSchema = createInsertSchema(vehicles).omit({
   id: true,
   createdAt: true,
+}).extend({
+  plate: z.string().min(1, "Plaka numarası zorunludur"),
+  brand: z.string().min(1, "Araç markası zorunludur"),
+  customerId: z.number().positive("Lütfen müşteri seçiniz"),
 });
 
 // Services table
