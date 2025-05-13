@@ -291,7 +291,7 @@ export default function JobsTable({ title, date }: JobsTableProps) {
                             className="text-primary"
                             title="Görüntüle"
                           >
-                            <Link href={`/view-job/${job.id}`}>
+                            <Link href={`/jobs/${job.id}`}>
                               <Eye className="h-4 w-4" />
                             </Link>
                           </Button>
