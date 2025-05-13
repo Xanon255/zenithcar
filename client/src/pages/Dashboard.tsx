@@ -13,7 +13,7 @@ export default function Dashboard() {
   const [today] = useState(new Date());
   const formattedDate = format(today, "dd-MM-yyyy", { locale: tr });
   const today_iso_date = today.toISOString().split('T')[0]; // YYYY-MM-DD format
-  const [_, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const searchParams = new URLSearchParams(useSearch());
   const shouldRefresh = searchParams.get('refresh') === 'true';
   const queryClient = useQueryClient();
@@ -51,18 +51,22 @@ export default function Dashboard() {
     window.print();
   };
   
+  // Yönlendirmeleri kontrol edelim
+  const isJobsPage = location && location.includes("/jobs");
+  const pageTitle = isJobsPage ? "İş Emirleri" : "Gün Özeti";
+
   return (
     <main className="container max-w-6xl mx-auto px-4 py-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-medium text-gray-darkest">
-            Gün Özeti - <span>{formattedDate}</span>
+            {pageTitle} - <span>{formattedDate}</span>
           </h1>
         </div>
         <div className="flex items-center text-sm">
           <Link href="/" className="text-primary hover:underline">Anasayfa</Link>
           <span className="mx-2 text-gray-medium">/</span>
-          <span className="text-gray-dark">Gün Özeti</span>
+          <span className="text-gray-dark">{pageTitle}</span>
         </div>
       </div>
       
