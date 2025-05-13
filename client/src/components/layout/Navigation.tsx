@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/", icon: Home, label: "ANASAYFA" },
   { href: "/new-job", icon: PlusCircle, label: "YENİ İŞ EMRİ" },
-  { href: "/view-job", icon: Eye, label: "İŞ EMRİ GÖSTER" },
+  { href: "/jobs", icon: Eye, label: "İŞ EMİRLERİ" },
   { href: "/customers", icon: Users, label: "MÜŞTERİLER" },
   { href: "/reports", icon: BarChart2, label: "RAPORLAR" },
   { href: "/price-list", icon: FileText, label: "FİYAT LİSTESİ" },
