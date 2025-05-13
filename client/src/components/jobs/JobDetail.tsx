@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRef } from "react";
 import { Link } from "wouter";
 import { useReactToPrint } from "react-to-print";
+// @ts-ignore - Workaround for react-to-print type issue
 import { Button } from "@/components/ui/button";
 import { Job, Customer, Vehicle, Service } from "@shared/schema";
 import { formatDate, formatCurrency, getJobStatusDisplay } from "@/lib/utils";
@@ -45,6 +46,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
     (vehicleId && vehicleQuery.isLoading) || 
     jobServicesQuery.isLoading;
   
+  // @ts-ignore - Explicitly ignore type issues with react-to-print
   const handlePrint = useReactToPrint({
     documentTitle: `İş Emri #${jobId}`,
     onPrintError: (error) => console.error("Print failed:", error),

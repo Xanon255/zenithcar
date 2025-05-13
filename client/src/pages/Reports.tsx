@@ -125,6 +125,7 @@ export default function Reports() {
   
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#FF6B6B'];
   
+  // @ts-ignore - Explicitly ignore type issues with react-to-print
   const handlePrint = useReactToPrint({
     documentTitle: `Oto Yıkama Raporu - ${format(date, "dd.MM.yyyy")}`,
     onPrintError: (error) => console.error("Print failed:", error),

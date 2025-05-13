@@ -175,12 +175,16 @@ export default function JobForm({ jobId }: JobFormProps) {
       if (vehicle) {
         setSelectedCustomerId(vehicle.customerId);
         
+        // Cast status to the proper enum type to fix type issues
+        const typedStatus = job.status as "bekliyor" | "devam_ediyor" | "tamamlandi" | "iptal";
+        
         form.reset({
-          ...job,
           vehicleId: job.vehicleId,
           customerId: job.customerId,
           totalAmount: job.totalAmount.toString(),
           paidAmount: job.paidAmount.toString(),
+          status: typedStatus,
+          notes: job.notes,
           selectedServices: jobServicesQuery.data.map(s => s.id),
         });
       }
