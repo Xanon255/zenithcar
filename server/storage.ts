@@ -149,8 +149,8 @@ export class DatabaseStorage implements IStorage {
     
     return {
       customerId: customerId,
-      totalSpent: totalSpent,
-      jobCount: jobCount,
+      totalSpent: Number(totalSpent),
+      jobCount: Number(jobCount),
       lastVisit: lastVisit
     };
   }
@@ -437,11 +437,15 @@ export class DatabaseStorage implements IStorage {
       
     const result = jobsResult[0];
     
+    const totalAmount = Number(result?.totalAmount || 0);
+    const totalPaid = Number(result?.totalPaid || 0);
+    const totalJobs = Number(result?.totalJobs || 0);
+    
     return {
-      totalAmount: result?.totalAmount || 0,
-      totalPaid: result?.totalPaid || 0,
-      totalJobs: result?.totalJobs || 0,
-      pendingPayments: (result?.totalAmount || 0) - (result?.totalPaid || 0)
+      totalAmount,
+      totalPaid,
+      totalJobs,
+      pendingPayments: totalAmount - totalPaid
     };
   }
   

@@ -165,6 +165,11 @@ export default function JobDetail({ jobId }: JobDetailProps) {
               <p><span className="font-medium">Toplam Tutar:</span> {formatCurrency(job.totalAmount)} TL</p>
               <p><span className="font-medium">Ödenen:</span> {formatCurrency(job.paidAmount)} TL</p>
               <p><span className="font-medium">Kalan:</span> {formatCurrency(remaining)} TL</p>
+              <p><span className="font-medium">Ödeme Yöntemi:</span> {
+                job.paymentMethod === 'nakit' ? 'Nakit' :
+                job.paymentMethod === 'kredi_karti' ? 'Kredi Kartı' :
+                job.paymentMethod === 'havale_eft' ? 'Havale/EFT' : 'Belirtilmemiş'
+              }</p>
             </div>
           </div>
           

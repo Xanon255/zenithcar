@@ -820,6 +820,32 @@ export default function JobForm({ jobId }: JobFormProps) {
                 </FormItem>
               )}
             />
+            
+            <FormField
+              control={form.control}
+              name="paymentMethod"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ödeme Yöntemi</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Ödeme yöntemi seçin" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="nakit">Nakit</SelectItem>
+                      <SelectItem value="kredi_karti">Kredi Kartı</SelectItem>
+                      <SelectItem value="havale_eft">Havale/EFT</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
         </div>
         
