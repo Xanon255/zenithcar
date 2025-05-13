@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 20 14.3% 4.1%;
+  --muted: 60 4.8% 95.9%;
+  --muted-foreground: 25 5.3% 44.7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 14.3% 4.1%;
+  --card: 0 0% 100%;
+  --card-foreground: 20 14.3% 4.1%;
+  --border: 20 5.9% 90%;
+  --input: 20 5.9% 90%;
+  
+  /* Main color (primary blue) */
+  --primary: 210 84% 52%;
+  --primary-foreground: 210 40% 98%;
+  
+  --secondary: 60 4.8% 95.9%;
+  --secondary-foreground: 24 9.8% 10%;
+  
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 60 9.1% 97.8%;
+  
+  --ring: 210 84% 52%;
+  --radius: 0.5rem;
+  
+  /* Chart colors */
+  --chart-1: 210 84% 52%;
+  --chart-2: 33 98% 50%;
+  --chart-3: 340 82% 76%;
+  --chart-4: 160 84% 39%;
+  --chart-5: 230 70% 50%;
+  
+  /* Sidebar colors */
+  --sidebar-background: 210 84% 52%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-primary: 0 0% 100%;
+  --sidebar-primary-foreground: 210 84% 52%;
+  --sidebar-accent: 210 50% 45%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 210 50% 45%;
+  --sidebar-ring: 0 0% 100%;
+}
+ 
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  
+  --primary: 210 84% 52%;
+  --primary-foreground: 0 0% 98%;
+  
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  
+  --ring: 240 4.9% 83.9%;
+  
+  /* Chart colors in dark mode */
+  --chart-1: 210 84% 52%;
+  --chart-2: 33 98% 60%;
+  --chart-3: 340 82% 76%;
+  --chart-4: 160 84% 39%;
+  --chart-5: 230 70% 60%;
+  
+  /* Sidebar colors in dark mode */
+  --sidebar-background: 210 50% 30%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-primary: 0 0% 100%;
+  --sidebar-primary-foreground: 210 50% 30%;
+  --sidebar-accent: 210 50% 20%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 210 50% 20%;
+  --sidebar-ring: 0 0% 100%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-gray-50 font-sans antialiased bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .data-table th, .data-table td {
+    @apply py-3 px-4 text-left;
+  }
+  
+  .data-table th {
+    @apply font-medium cursor-pointer;
+  }
+  
+  .data-table tr {
+    @apply border-b border-gray-100;
+  }
+  
+  .data-table tr:hover {
+    @apply bg-gray-50;
+  }
+  
+  @media print {
+    .no-print {
+      @apply hidden;
+    }
+    
+    body {
+      @apply bg-white;
+    }
+  }
+}
