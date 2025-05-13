@@ -251,6 +251,10 @@ export default function JobsTable({ title, date }: JobsTableProps) {
                   TARİH
                   <ArrowUpDown className="inline h-4 w-4 ml-1" />
                 </th>
+                <th className="py-3 font-medium" onClick={() => handleSort("time")}>
+                  SAAT
+                  <ArrowUpDown className="inline h-4 w-4 ml-1" />
+                </th>
                 <th className="py-3 font-medium" onClick={() => handleSort("status")}>
                   İŞ DURUM
                   <ArrowUpDown className="inline h-4 w-4 ml-1" />
@@ -285,11 +289,16 @@ export default function JobsTable({ title, date }: JobsTableProps) {
                       <td className="py-3">{job.id}</td>
                       <td className="py-3 font-medium">{vehicle?.plate}</td>
                       <td className="py-3">{vehicle?.brand} {vehicle?.model}</td>
-                      <td className="py-3">{customer?.name}</td>
+                      <td className="py-3">
+                        <Link href={`/customer/${customer?.id}`} className="text-primary hover:underline">
+                          {customer?.name}
+                        </Link>
+                      </td>
                       <td className="py-3">{formatCurrency(job.totalAmount)}</td>
                       <td className="py-3 text-green-600">{formatCurrency(job.paidAmount)}</td>
                       <td className="py-3">{formatCurrency(remaining)}</td>
                       <td className="py-3">{formatDate(job.createdAt)}</td>
+                      <td className="py-3">{new Date(job.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</td>
                       <td className="py-3">
                         <Badge className={`rounded-full px-2 py-1 ${statusInfo.className}`}>
                           {statusInfo.label}
