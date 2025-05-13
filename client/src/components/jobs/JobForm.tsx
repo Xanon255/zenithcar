@@ -302,13 +302,17 @@ export default function JobForm({ jobId }: JobFormProps) {
         }
       }
       
+      // İnvalidate all relevant queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/daily"] });
+      
       toast({
         title: "Başarılı",
-        description: `İş emri ${jobId ? "güncellendi" : "oluşturuldu"}`,
+        description: `İş emri başarıyla ${jobId ? "güncellendi" : "oluşturuldu"}`,
       });
       
-      // Navigate back to dashboard
-      navigate("/");
+      // Navigate back to dashboard with refresh flag
+      navigate("/jobs?refresh=true");
     } catch (error) {
       toast({
         title: "Hata",

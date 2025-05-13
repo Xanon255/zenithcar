@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Eye, Edit, Trash, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";

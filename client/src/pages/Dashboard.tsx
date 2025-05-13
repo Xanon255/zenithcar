@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useLocation, useSearch } from "wouter";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { ReceiptCent, Receipt, Clock, Wallet, Plus, Printer } from "lucide-react";
@@ -12,6 +12,24 @@ import { formatCurrency } from "@/lib/utils";
 export default function Dashboard() {
   const [today] = useState(new Date());
   const formattedDate = format(today, "dd-MM-yyyy", { locale: tr });
+  const [_, setLocation] = useLocation();
+  const searchParams = new URLSearchParams(useSearch());
+  const shouldRefresh = searchParams.get('refresh') === 'true';
+  const queryClient = useQueryClient();
+  
+  // Effect to remove the refresh parameter from URL
+  useEffect(() => {
+    if (shouldRefresh) {
+      // Force refresh all data
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/daily"] });
+      
+      // Remove refresh parameter from URL
+      setTimeout(() => {
+        setLocation("/jobs", { replace: true });
+      }, 100);
+    }
+  }, [shouldRefresh, queryClient, setLocation]);
   
   // Fetch daily statistics
   const statsQuery = useQuery({
