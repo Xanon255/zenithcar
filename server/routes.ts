@@ -510,6 +510,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(stats);
   });
   
+  // Popular services statistics
+  app.get("/api/stats/popular-services", async (req, res) => {
+    try {
+      const stats = await storage.getPopularServices();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching popular services:", error);
+      res.status(500).json({ message: "An error occurred while fetching popular services" });
+    }
+  });
+  
   // Net profit statistics
   app.get("/api/stats/net-profit", async (req, res) => {
     const startDateParam = req.query.startDate as string;

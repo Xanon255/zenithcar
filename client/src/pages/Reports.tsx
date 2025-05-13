@@ -153,22 +153,38 @@ export default function Reports() {
     return baseData;
   }, [jobsQuery.data]);
   
-  // Create service distribution data based on jobs
+  // Fetch services
   const servicesQuery = useQuery<any[]>({
     queryKey: ["/api/services"],
   });
   
-  // Initialize service distribution with actual service names but zero values
-  const serviceDistributionData = servicesQuery.data && servicesQuery.data.length > 0
-    ? servicesQuery.data.map(service => ({ 
+  // Fetch popular services
+  const popularServicesQuery = useQuery<any[]>({
+    queryKey: ["/api/stats/popular-services"],
+    refetchInterval: 5000,
+    staleTime: 0,
+  });
+  
+  // Initialize service distribution with popular services data
+  const serviceDistributionData = useMemo(() => {
+    if (popularServicesQuery.data && popularServicesQuery.data.length > 0) {
+      return popularServicesQuery.data.map(service => ({
+        name: service.name,
+        value: service.count
+      }));
+    } else if (servicesQuery.data && servicesQuery.data.length > 0) {
+      return servicesQuery.data.map(service => ({ 
         name: service.name, 
         value: 0 
-      }))
-    : [
-      { name: "Dış Yıkama", value: 0 },
-      { name: "İç Temizlik", value: 0 },
-      { name: "Motor Yıkama", value: 0 },
-    ];
+      }));
+    } else {
+      return [
+        { name: "Dış Yıkama", value: 0 },
+        { name: "İç Temizlik", value: 0 },
+        { name: "Motor Yıkama", value: 0 },
+      ];
+    }
+  }, [popularServicesQuery.data, servicesQuery.data]);
   
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#FF6B6B'];
   

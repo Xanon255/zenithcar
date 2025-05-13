@@ -236,6 +236,26 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
   }
+  
+  async getPopularServices(): Promise<{name: string, count: number}[]> {
+    const result = await db
+      .select({
+        serviceId: jobServices.serviceId,
+        name: services.name,
+        count: count(),
+      })
+      .from(jobServices)
+      .leftJoin(services, eq(jobServices.serviceId, services.id))
+      .leftJoin(jobs, eq(jobServices.jobId, jobs.id))
+      .where(sql`${jobs.status} != 'iptal'`)
+      .groupBy(jobServices.serviceId, services.name)
+      .orderBy(desc(count()));
+      
+    return result.map(item => ({
+      name: item.name || "",
+      count: Number(item.count) || 0
+    }));
+  }
 
   // Job methods
   async getJobs(): Promise<Job[]> {
