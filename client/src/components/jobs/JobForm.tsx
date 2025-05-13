@@ -261,29 +261,104 @@ export default function JobForm({ jobId }: JobFormProps) {
   
   const onSubmit = async (formData: z.infer<typeof formSchema>) => {
     try {
+      // Form verilerini kontrol etme ve validasyon
+      if (isNewCustomer && (!formData.customerName || formData.customerName.trim() === "")) {
+        toast({
+          title: "Hata",
+          description: "Müşteri adı zorunludur",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (isNewVehicle && (!formData.vehiclePlate || formData.vehiclePlate.trim() === "")) {
+        toast({
+          title: "Hata",
+          description: "Araç plakası zorunludur",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (isNewVehicle && (!formData.vehicleBrand || formData.vehicleBrand.trim() === "")) {
+        toast({
+          title: "Hata",
+          description: "Araç markası zorunludur",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!isNewCustomer && (!formData.customerId || typeof formData.customerId !== 'number')) {
+        toast({
+          title: "Hata",
+          description: "Lütfen müşteri seçiniz",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       let customerId = formData.customerId;
       let vehicleId = formData.vehicleId;
       
-      // Create new customer if needed
+      // Yeni müşteri oluştur
       if (isNewCustomer && formData.customerName) {
-        const newCustomer = await createCustomerMutation.mutateAsync({
-          name: formData.customerName,
-          phone: formData.customerPhone,
-          email: formData.customerEmail,
-        });
-        customerId = newCustomer.id;
+        try {
+          const newCustomer = await createCustomerMutation.mutateAsync({
+            name: formData.customerName,
+            phone: formData.customerPhone || "",
+            email: formData.customerEmail || "",
+          });
+          customerId = newCustomer.id;
+        } catch (error) {
+          toast({
+            title: "Hata",
+            description: "Müşteri oluşturulurken bir hata oluştu",
+            variant: "destructive",
+          });
+          return;
+        }
       }
       
-      // Create new vehicle if needed
-      if (isNewVehicle && formData.vehiclePlate && formData.vehicleBrand && customerId) {
-        const newVehicle = await createVehicleMutation.mutateAsync({
-          plate: formData.vehiclePlate,
-          brand: formData.vehicleBrand,
-          model: formData.vehicleModel,
-          color: formData.vehicleColor,
-          customerId,
+      // Müşteri ID'si kontrol edilsin
+      if (!customerId) {
+        toast({
+          title: "Hata",
+          description: "Müşteri bilgisi eksik",
+          variant: "destructive",
         });
-        vehicleId = newVehicle.id;
+        return;
+      }
+      
+      // Yeni araç oluştur
+      if (isNewVehicle && formData.vehiclePlate && formData.vehicleBrand && customerId) {
+        try {
+          const newVehicle = await createVehicleMutation.mutateAsync({
+            plate: formData.vehiclePlate,
+            brand: formData.vehicleBrand,
+            model: formData.vehicleModel || "",
+            color: formData.vehicleColor || "",
+            customerId,
+          });
+          vehicleId = newVehicle.id;
+        } catch (error) {
+          toast({
+            title: "Hata",
+            description: "Araç oluşturulurken bir hata oluştu",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      
+      // Araç ID'si kontrol edilsin
+      if (!vehicleId) {
+        toast({
+          title: "Hata",
+          description: "Araç bilgisi eksik",
+          variant: "destructive",
+        });
+        return;
       }
       
       // Prepare job data
@@ -301,15 +376,47 @@ export default function JobForm({ jobId }: JobFormProps) {
       // Create or update job
       if (jobId) {
         // Update existing job
-        await updateJobMutation.mutateAsync({
-          id: parseInt(jobId),
-          data: jobData,
-        });
-        newJobId = parseInt(jobId);
+        try {
+          await updateJobMutation.mutateAsync({
+            id: parseInt(jobId),
+            data: {
+              vehicleId: vehicleId as number,
+              customerId: customerId as number,
+              totalAmount: formData.totalAmount,
+              paidAmount: formData.paidAmount || "0",
+              status: formData.status as "bekliyor" | "devam_ediyor" | "tamamlandi" | "iptal",
+              notes: formData.notes
+            },
+          });
+          newJobId = parseInt(jobId);
+        } catch (error) {
+          toast({
+            title: "Hata",
+            description: "İş emri güncellenirken bir hata oluştu",
+            variant: "destructive",
+          });
+          return;
+        }
       } else {
         // Create new job
-        const newJob = await createJobMutation.mutateAsync(jobData);
-        newJobId = newJob.id;
+        try {
+          const newJob = await createJobMutation.mutateAsync({
+            vehicleId: vehicleId as number,
+            customerId: customerId as number,
+            totalAmount: formData.totalAmount,
+            paidAmount: formData.paidAmount || "0",
+            status: formData.status,
+            notes: formData.notes
+          });
+          newJobId = newJob.id;
+        } catch (error) {
+          toast({
+            title: "Hata",
+            description: "İş emri oluşturulurken bir hata oluştu",
+            variant: "destructive",
+          });
+          return;
+        }
       }
       
       // Handle services
@@ -628,6 +735,7 @@ export default function JobForm({ jobId }: JobFormProps) {
                     placeholder="Ek notlar buraya yazılabilir..."
                     rows={3}
                     {...field}
+                    value={field.value || ''}
                   />
                 </FormControl>
                 <FormMessage />

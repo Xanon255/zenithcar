@@ -174,7 +174,8 @@ export default function ServiceForm({ serviceId }: ServiceFormProps) {
               <FormControl>
                 <Textarea 
                   placeholder="Hizmet açıklaması..." 
-                  {...field} 
+                  {...field}
+                  value={field.value || ''}
                 />
               </FormControl>
               <FormMessage />
