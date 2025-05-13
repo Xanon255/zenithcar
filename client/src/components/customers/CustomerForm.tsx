@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -42,7 +43,7 @@ export default function CustomerForm({ customerId }: CustomerFormProps) {
   });
   
   // Load customer data when editing
-  React.useEffect(() => {
+  useEffect(() => {
     if (customerId && customerQuery.data) {
       form.reset({
         name: customerQuery.data.name,
@@ -129,29 +130,52 @@ export default function CustomerForm({ customerId }: CustomerFormProps) {
         <FormField
           control={form.control}
           name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Telefon</FormLabel>
-              <FormControl>
-                <Input placeholder="0555 123 4567" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+          render={({ field }) => {
+            // Ensure values are always strings
+            const value = field.value ?? '';
+            return (
+              <FormItem>
+                <FormLabel>Telefon</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="0555 123 4567" 
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                    value={value}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
         
         <FormField
           control={form.control}
           name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>E-posta</FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="ornek@email.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+          render={({ field }) => {
+            // Ensure values are always strings
+            const value = field.value ?? '';
+            return (
+              <FormItem>
+                <FormLabel>E-posta</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="email" 
+                    placeholder="ornek@email.com" 
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                    value={value}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
         
         <div className="flex justify-end pt-4">
