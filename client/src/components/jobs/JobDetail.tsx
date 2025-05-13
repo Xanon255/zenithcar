@@ -47,14 +47,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
   
   const handlePrint = useReactToPrint({
     documentTitle: `İş Emri #${jobId}`,
-    onBeforeGetContent: () => {
-      if (!printRef.current) {
-        console.error("Print ref is not available");
-      }
-      return Promise.resolve();
-    },
     onPrintError: (error) => console.error("Print failed:", error),
-    // @ts-ignore - content property exists in react-to-print
     content: () => printRef.current,
   });
   

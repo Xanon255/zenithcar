@@ -12,6 +12,7 @@ interface DailyStats {
 }
 import { Calendar as CalendarIcon, ChevronRight, Download, Printer } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
+// @ts-ignore - Workaround for react-to-print type issue
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -126,14 +127,7 @@ export default function Reports() {
   
   const handlePrint = useReactToPrint({
     documentTitle: `Oto Yıkama Raporu - ${format(date, "dd.MM.yyyy")}`,
-    onBeforeGetContent: () => {
-      if (!printRef.current) {
-        console.error("Print ref is not available");
-      }
-      return Promise.resolve();
-    },
     onPrintError: (error) => console.error("Print failed:", error),
-    // @ts-ignore - content property exists in react-to-print
     content: () => printRef.current,
   });
   
@@ -249,26 +243,36 @@ export default function Reports() {
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={serviceDistributionData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {serviceDistributionData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => `${value}%`} />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  {servicesQuery.isLoading ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p>Yükleniyor...</p>
+                    </div>
+                  ) : servicesQuery.data && servicesQuery.data.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={serviceDistributionData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {serviceDistributionData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => `${value}`} />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center">
+                      <p>Hizmet verisi bulunamadı</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -279,24 +283,34 @@ export default function Reports() {
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={serviceDistributionData}
-                      margin={{
-                        top: 5,
-                        right: 30,
-                        left: 20,
-                        bottom: 5,
-                      }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="value" name="Hizmet Sayısı" fill="#1E88E5" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {servicesQuery.isLoading ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p>Yükleniyor...</p>
+                    </div>
+                  ) : servicesQuery.data && servicesQuery.data.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={serviceDistributionData}
+                        margin={{
+                          top: 5,
+                          right: 30,
+                          left: 20,
+                          bottom: 5,
+                        }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="value" name="Hizmet Sayısı" fill="#1E88E5" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center">
+                      <p>Hizmet verisi bulunamadı</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -310,30 +324,36 @@ export default function Reports() {
             </CardHeader>
             <CardContent>
               <div className="h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={dailyRevenueData}
-                    margin={{
-                      top: 5,
-                      right: 30,
-                      left: 20,
-                      bottom: 5,
-                    }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => `${value} TL`} />
-                    <Legend />
-                    <Line 
-                      type="monotone" 
-                      dataKey="total" 
-                      name="Günlük Gelir" 
-                      stroke="#1E88E5" 
-                      activeDot={{ r: 8 }} 
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                {jobsQuery.isLoading ? (
+                  <div className="h-full flex items-center justify-center">
+                    <p>Yükleniyor...</p>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={dailyRevenueData}
+                      margin={{
+                        top: 5,
+                        right: 30,
+                        left: 20,
+                        bottom: 5,
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => `${formatCurrency(value as number)} TL`} />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey="total" 
+                        name="Günlük Gelir" 
+                        stroke="#1E88E5" 
+                        activeDot={{ r: 8 }} 
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </CardContent>
           </Card>
