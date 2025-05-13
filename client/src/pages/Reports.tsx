@@ -3,12 +3,24 @@ import { useQuery } from "@tanstack/react-query";
 import { format, subDays } from "date-fns";
 import { tr } from "date-fns/locale";
 
-// Define the stats interface
+// Define the stats interfaces
 interface DailyStats {
   totalAmount: number;
   totalPaid: number;
   totalJobs: number;
   pendingPayments: number;
+}
+
+interface PaymentMethodStats {
+  method: string;
+  count: number;
+  total: number;
+}
+
+interface NetProfitStats {
+  totalRevenue: number;
+  totalExpenses: number;
+  netProfit: number;
 }
 import { Calendar as CalendarIcon, ChevronRight, Download, Printer } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
@@ -78,6 +90,16 @@ export default function Reports() {
   // Fetch jobs to generate chart data
   const jobsQuery = useQuery<any[]>({
     queryKey: ["/api/jobs"],
+  });
+  
+  // Fetch payment method stats
+  const paymentMethodsQuery = useQuery<PaymentMethodStats[]>({
+    queryKey: ["/api/stats/payment-methods"],
+  });
+  
+  // Fetch net profit stats
+  const netProfitQuery = useQuery<NetProfitStats>({
+    queryKey: [`/api/stats/net-profit?startDate=${formattedStartDate}&endDate=${formattedEndDate}`],
   });
   
   // Create daily revenue data based on actual jobs

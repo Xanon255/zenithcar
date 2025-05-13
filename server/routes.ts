@@ -460,6 +460,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const stats = await storage.getDailyStats(date);
     res.json(stats);
   });
+  
+  // Payment method statistics
+  app.get("/api/stats/payment-methods", async (req, res) => {
+    const stats = await storage.getPaymentMethodStats();
+    res.json(stats);
+  });
+  
+  // Net profit statistics
+  app.get("/api/stats/net-profit", async (req, res) => {
+    const startDateParam = req.query.startDate as string;
+    const endDateParam = req.query.endDate as string;
+    
+    if (!startDateParam || !endDateParam) {
+      return res.status(400).json({ message: "Start date and end date are required" });
+    }
+    
+    const startDate = new Date(startDateParam);
+    const endDate = new Date(endDateParam);
+    
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return res.status(400).json({ message: "Invalid date format" });
+    }
+    
+    const stats = await storage.getNetProfit(startDate, endDate);
+    res.json(stats);
+  });
 
   const httpServer = createServer(app);
   return httpServer;
