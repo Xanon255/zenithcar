@@ -36,6 +36,7 @@ export interface IStorage {
   createService(service: InsertService): Promise<Service>;
   updateService(id: number, service: Partial<InsertService>): Promise<Service | undefined>;
   deleteService(id: number): Promise<boolean>;
+  getPopularServices(): Promise<{name: string, count: number}[]>;
   
   // Job methods
   getJobs(): Promise<Job[]>;
@@ -432,6 +433,8 @@ export class DatabaseStorage implements IStorage {
     
     const endDate = new Date(date);
     endDate.setHours(23, 59, 59, 999);
+    
+    console.log("Günlük istatistik için tarih aralığı:", startDate, endDate);
     
     const jobsResult = await db
       .select({

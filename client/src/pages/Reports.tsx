@@ -87,7 +87,7 @@ export default function Reports() {
 
   // Fetch statistics for the date range
   const statsQuery = useQuery<DailyStats>({
-    queryKey: [`/api/stats/daily?date=${format(today, "yyyy-MM-dd")}`],
+    queryKey: [`/api/stats/daily?date=${format(date, "yyyy-MM-dd")}`],
     refetchInterval: 5000, // Her 5 saniyede bir yenile
     staleTime: 0, // Her zaman güncel veri al
   });
