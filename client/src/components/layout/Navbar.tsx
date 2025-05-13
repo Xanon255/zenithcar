@@ -70,8 +70,8 @@ export default function Navbar() {
                 <path d="M15 19v-3h-4v3" />
               </svg>
               <div className="flex flex-col">
-                <span className="font-bold text-xl">Oto Yıkama</span>
-                <span className="text-xs -mt-1">takip sistemi</span>
+                <span className="font-bold text-xl">ZENITH CAR</span>
+                <span className="text-xs -mt-1">Oto Yıkama Sistemi</span>
               </div>
             </Link>
             
@@ -102,9 +102,9 @@ export default function Navbar() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center ml-4">
                   <div className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center mr-2">
-                    <span className="text-sm font-bold">AD</span>
+                    <span className="text-sm font-bold">ZC</span>
                   </div>
-                  <span className="font-medium">Demo Admin</span>
+                  <span className="font-medium">ZENITH CAR</span>
                   <ChevronDown className="ml-1 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
