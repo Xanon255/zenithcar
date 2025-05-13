@@ -42,12 +42,33 @@ export default function JobForm({ jobId }: JobFormProps) {
   // Create an extended schema with required validation
   const formSchema = insertJobSchema.extend({
     // Additional fields not in the job schema
-    customerName: z.string().optional(),
+    customerName: z.string().min(1, "Müşteri adı zorunludur").optional().superRefine((val, ctx) => {
+      if (isNewCustomer && (!val || val.trim() === "")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Müşteri adı zorunludur",
+        });
+      }
+    }),
     customerPhone: z.string().optional(),
     customerEmail: z.string().optional(),
     
-    vehiclePlate: z.string().optional(),
-    vehicleBrand: z.string().optional(),
+    vehiclePlate: z.string().optional().superRefine((val, ctx) => {
+      if (isNewVehicle && (!val || val.trim() === "")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Plaka zorunludur",
+        });
+      }
+    }),
+    vehicleBrand: z.string().optional().superRefine((val, ctx) => {
+      if (isNewVehicle && (!val || val.trim() === "")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Marka zorunludur",
+        });
+      }
+    }),
     vehicleModel: z.string().optional(),
     vehicleColor: z.string().optional(),
     
@@ -55,6 +76,24 @@ export default function JobForm({ jobId }: JobFormProps) {
     
     // Override required fields
     status: jobStatusEnum,
+
+    // Validate customer and vehicle selections
+    customerId: z.number().optional().superRefine((val, ctx) => {
+      if (!isNewCustomer && (!val || val <= 0)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Lütfen müşteri seçiniz",
+        });
+      }
+    }),
+    vehicleId: z.number().optional().superRefine((val, ctx) => {
+      if (!isNewVehicle && (!val || val <= 0)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Lütfen araç seçiniz",
+        });
+      }
+    }),
   });
   
   // Define the form
@@ -66,6 +105,13 @@ export default function JobForm({ jobId }: JobFormProps) {
       paidAmount: "0",
       notes: "",
       selectedServices: [],
+      customerName: "",
+      customerPhone: "",
+      customerEmail: "",
+      vehiclePlate: "",
+      vehicleBrand: "",
+      vehicleModel: "",
+      vehicleColor: "",
     },
   });
   
