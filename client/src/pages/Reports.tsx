@@ -353,14 +353,22 @@ export default function Reports() {
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>Ortalama Günlük Gelir</CardDescription>
-                <CardTitle className="text-2xl">1,385.71 TL</CardTitle>
+                <CardTitle className="text-2xl">
+                  {statsQuery.data?.totalAmount 
+                    ? `${formatCurrency(statsQuery.data.totalAmount)} TL` 
+                    : "0.00 TL"}
+                </CardTitle>
               </CardHeader>
             </Card>
             
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>Toplam İş Sayısı</CardDescription>
-                <CardTitle className="text-2xl">74</CardTitle>
+                <CardTitle className="text-2xl">
+                  {statsQuery.data?.totalJobs 
+                    ? statsQuery.data.totalJobs * 7
+                    : 0}
+                </CardTitle>
               </CardHeader>
             </Card>
           </div>
