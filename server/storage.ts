@@ -127,14 +127,26 @@ export class DatabaseStorage implements IStorage {
         totalSpent: sum(jobs.totalAmount)
       })
       .from(jobs)
-      .where(eq(jobs.customerId, customerId));
+      .where(
+        and(
+          eq(jobs.customerId, customerId),
+          // İptal edilmiş işleri müşteri analizine dahil etmiyoruz
+          sql`${jobs.status} != 'iptal'`
+        )
+      );
       
     const jobCountResult = await db
       .select({
         jobCount: count()
       })
       .from(jobs)
-      .where(eq(jobs.customerId, customerId));
+      .where(
+        and(
+          eq(jobs.customerId, customerId),
+          // İptal edilmiş işleri müşteri analizine dahil etmiyoruz
+          sql`${jobs.status} != 'iptal'`
+        )
+      );
       
     const lastVisitResult = await db
       .select({
@@ -463,7 +475,13 @@ export class DatabaseStorage implements IStorage {
         total: sum(jobs.paidAmount)
       })
       .from(jobs)
-      .where(sql`${jobs.paidAmount} > 0`)
+      .where(
+        and(
+          sql`${jobs.paidAmount} > 0`,
+          // İptal edilmiş işleri istatistiklere dahil etmiyoruz
+          sql`${jobs.status} != 'iptal'`
+        )
+      )
       .groupBy(jobs.paymentMethod);
       
     return result.map(item => ({
@@ -486,7 +504,9 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           sql`${jobs.createdAt} >= ${startDate}`,
-          sql`${jobs.createdAt} <= ${endDate}`
+          sql`${jobs.createdAt} <= ${endDate}`,
+          // İptal edilmiş işleri gelir hesabına dahil etmiyoruz
+          sql`${jobs.status} != 'iptal'`
         )
       );
       

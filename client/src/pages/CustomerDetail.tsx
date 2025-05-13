@@ -221,7 +221,7 @@ export default function CustomerDetail() {
                               <TableCell className="font-medium">{vehicle.plate}</TableCell>
                               <TableCell>{vehicle.brand}</TableCell>
                               <TableCell>{vehicle.model}</TableCell>
-                              <TableCell>{vehicle.year || "-"}</TableCell>
+                              <TableCell>-</TableCell>
                               <TableCell>
                                 <Link href={`/vehicles/${vehicle.id}`}>
                                   <Button variant="link" size="sm">Detay</Button>
