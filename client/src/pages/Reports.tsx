@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, subDays } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Calendar as CalendarIcon, ChevronRight, Download, Printer } from "lucide-react";
+import { useReactToPrint } from "react-to-print";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -38,6 +39,7 @@ import {
 export default function Reports() {
   const [date, setDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState("daily");
+  const printRef = useRef<HTMLDivElement>(null);
   
   // Calculate date ranges based on active tab
   const getDateRange = () => {
@@ -86,12 +88,21 @@ export default function Reports() {
   
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#FF6B6B'];
   
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = useReactToPrint({
+    documentTitle: `Oto Yıkama Raporu - ${format(date, "dd.MM.yyyy")}`,
+    onBeforeGetContent: () => {
+      if (!printRef.current) {
+        console.error("Print ref is not available");
+      }
+      return Promise.resolve();
+    },
+    onPrintError: (error) => console.error("Print failed:", error),
+    // @ts-ignore - content property exists in react-to-print
+    content: () => printRef.current,
+  });
   
   return (
-    <main className="container mx-auto px-4 py-6">
+    <main className="container mx-auto px-4 py-6" ref={printRef}>
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-medium text-gray-darkest">Raporlar</h1>
