@@ -342,7 +342,11 @@ export default function Reports() {
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>Haftalık Toplam</CardDescription>
-                <CardTitle className="text-2xl">9,700.00 TL</CardTitle>
+                <CardTitle className="text-2xl">
+                  {statsQuery.data?.totalAmount 
+                    ? `${formatCurrency(statsQuery.data.totalAmount * 7)} TL` 
+                    : "0.00 TL"}
+                </CardTitle>
               </CardHeader>
             </Card>
             
@@ -412,15 +416,19 @@ export default function Reports() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Günlük Ortalama İş:</span>
-                      <span className="font-medium">8.0</span>
+                      <span className="font-medium">
+                        {statsQuery.data && statsQuery.data.totalJobs > 0 
+                          ? (statsQuery.data.totalJobs / 30).toFixed(1) 
+                          : "0.0"}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span>En Yoğun Gün:</span>
-                      <span className="font-medium">Cumartesi (58 iş)</span>
+                      <span className="font-medium">-</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span>En Çok Tercih Edilen Hizmet:</span>
-                      <span className="font-medium">Dış Yıkama (112)</span>
+                      <span className="font-medium">-</span>
                     </div>
                   </div>
                 </div>
