@@ -23,7 +23,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { insertJobSchema, jobStatusEnum, Customer, Vehicle, Service, Job } from "@shared/schema";
+import { insertJobSchema, jobStatusEnum, paymentMethodEnum, Customer, Vehicle, Service, Job } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -76,6 +76,7 @@ export default function JobForm({ jobId }: JobFormProps) {
     
     // Override required fields
     status: jobStatusEnum,
+    paymentMethod: paymentMethodEnum,
 
     // Validate customer and vehicle selections
     customerId: z.number().optional().superRefine((val, ctx) => {
@@ -101,6 +102,7 @@ export default function JobForm({ jobId }: JobFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       status: "bekliyor",
+      paymentMethod: "nakit",
       totalAmount: "0",
       paidAmount: "0",
       notes: "",
@@ -175,8 +177,9 @@ export default function JobForm({ jobId }: JobFormProps) {
       if (vehicle) {
         setSelectedCustomerId(vehicle.customerId);
         
-        // Cast status to the proper enum type to fix type issues
+        // Cast status and payment method to the proper enum types to fix type issues
         const typedStatus = job.status as "bekliyor" | "devam_ediyor" | "tamamlandi" | "iptal";
+        const typedPaymentMethod = job.paymentMethod as "nakit" | "kredi_karti" | "havale_eft";
         
         form.reset({
           vehicleId: job.vehicleId,
@@ -184,6 +187,7 @@ export default function JobForm({ jobId }: JobFormProps) {
           totalAmount: job.totalAmount.toString(),
           paidAmount: job.paidAmount.toString(),
           status: typedStatus,
+          paymentMethod: typedPaymentMethod || "nakit",
           notes: job.notes,
           selectedServices: jobServicesQuery.data.map(s => s.id),
         });
@@ -371,6 +375,7 @@ export default function JobForm({ jobId }: JobFormProps) {
         customerId,
         totalAmount: formData.totalAmount,
         paidAmount: formData.paidAmount,
+        paymentMethod: formData.paymentMethod,
         status: formData.status,
         notes: formData.notes,
       };
