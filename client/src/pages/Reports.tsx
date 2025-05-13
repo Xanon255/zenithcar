@@ -85,22 +85,29 @@ export default function Reports() {
   // Fetch statistics for the date range
   const statsQuery = useQuery<DailyStats>({
     queryKey: [`/api/stats/daily?date=${format(date, "yyyy-MM-dd")}`],
+    refetchInterval: 5000, // Her 5 saniyede bir yenile
+    staleTime: 0, // Her zaman güncel veri al
   });
   
   // Fetch jobs to generate chart data - Tüm işleri alır, durum filtresi uygulanmaz
   const jobsQuery = useQuery<any[]>({
     queryKey: ["/api/jobs"],
-    refetchInterval: 3000 // Her 3 saniyede bir yenile
+    refetchInterval: 5000, // Her 5 saniyede bir yenile
+    staleTime: 0, // Her zaman güncel veri al
   });
   
   // Fetch payment method stats
   const paymentMethodsQuery = useQuery<PaymentMethodStats[]>({
     queryKey: ["/api/stats/payment-methods"],
+    refetchInterval: 5000, // Her 5 saniyede bir yenile
+    staleTime: 0, // Her zaman güncel veri al
   });
   
   // Fetch net profit stats
   const netProfitQuery = useQuery<NetProfitStats>({
     queryKey: [`/api/stats/net-profit?startDate=${formattedStartDate}&endDate=${formattedEndDate}`],
+    refetchInterval: 5000, // Her 5 saniyede bir yenile
+    staleTime: 0, // Her zaman güncel veri al
   });
   
   // Create daily revenue data based on actual jobs

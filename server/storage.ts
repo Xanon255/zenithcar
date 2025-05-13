@@ -431,7 +431,9 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           sql`${jobs.createdAt} >= ${startDate}`,
-          sql`${jobs.createdAt} <= ${endDate}`
+          sql`${jobs.createdAt} <= ${endDate}`,
+          // İptal edilmiş işleri toplam tutara dahil etmiyoruz
+          sql`${jobs.status} != 'iptal'`
         )
       );
       
