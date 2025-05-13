@@ -190,7 +190,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/services", async (req, res) => {
     try {
-      const data = insertServiceSchema.parse(req.body);
+      // Fiyat sayı olarak geliyorsa string'e çevir, aksi halde direkt kullan
+      const requestData = { ...req.body };
+      if (typeof requestData.price === 'number') {
+        requestData.price = requestData.price.toString();
+      }
+      
+      const data = insertServiceSchema.parse(requestData);
       const service = await storage.createService(data);
       res.status(201).json(service);
     } catch (error) {
@@ -208,7 +214,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const data = insertServiceSchema.partial().parse(req.body);
+      // Fiyat sayı olarak geliyorsa string'e çevir, aksi halde direkt kullan
+      const requestData = { ...req.body };
+      if (typeof requestData.price === 'number') {
+        requestData.price = requestData.price.toString();
+      }
+      
+      const data = insertServiceSchema.partial().parse(requestData);
       const service = await storage.updateService(id, data);
       if (!service) {
         return res.status(404).json({ message: "Service not found" });

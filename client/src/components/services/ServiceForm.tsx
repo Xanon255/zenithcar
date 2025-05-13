@@ -57,14 +57,20 @@ export default function ServiceForm({ serviceId }: ServiceFormProps) {
     }
   }, [serviceId, serviceQuery.data, form]);
   
+  // Formun bulunduğu dialog'u kapatmak için kullanılacak
+  const closeParentDialog = () => {
+    const dialogElement = document.querySelector('[role="dialog"]');
+    const closeButton = dialogElement?.querySelector('button[aria-label="Close"]');
+    if (closeButton) {
+      (closeButton as HTMLButtonElement).click();
+    }
+  };
+
   // Create service mutation
   const createServiceMutation = useMutation({
     mutationFn: async (data: z.infer<typeof formSchema>) => {
-      const serviceData = {
-        ...data,
-        price: parseFloat(data.price), // Convert string to number for API
-      };
-      const res = await apiRequest("POST", "/api/services", serviceData);
+      // API artık string price kabul edecek şekilde düzeltildi, çevirmeye gerek yok
+      const res = await apiRequest("POST", "/api/services", data);
       return res.json();
     },
     onSuccess: () => {
@@ -74,6 +80,8 @@ export default function ServiceForm({ serviceId }: ServiceFormProps) {
         description: "Hizmet başarıyla oluşturuldu.",
       });
       form.reset();
+      // Dialog'u kapat
+      closeParentDialog();
     },
     onError: () => {
       toast({
@@ -87,11 +95,8 @@ export default function ServiceForm({ serviceId }: ServiceFormProps) {
   // Update service mutation
   const updateServiceMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: z.infer<typeof formSchema> }) => {
-      const serviceData = {
-        ...data,
-        price: parseFloat(data.price), // Convert string to number for API
-      };
-      const res = await apiRequest("PUT", `/api/services/${id}`, serviceData);
+      // API artık string price kabul edecek şekilde düzeltildi, çevirmeye gerek yok
+      const res = await apiRequest("PUT", `/api/services/${id}`, data);
       return res.json();
     },
     onSuccess: () => {
@@ -100,6 +105,8 @@ export default function ServiceForm({ serviceId }: ServiceFormProps) {
         title: "Başarılı",
         description: "Hizmet başarıyla güncellendi.",
       });
+      // Dialog'u kapat
+      closeParentDialog();
     },
     onError: () => {
       toast({
