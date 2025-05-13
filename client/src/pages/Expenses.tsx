@@ -118,6 +118,13 @@ export default function Expenses() {
   // Create expense mutation
   const createExpenseMutation = useMutation({
     mutationFn: async (data: z.infer<typeof formSchema>) => {
+      console.log("Gönderilen veri:", {
+        name: data.name,
+        amount: data.amount,
+        category: data.category,
+        notes: data.notes,
+        date: data.expenseDate,
+      });
       const res = await apiRequest("POST", "/api/expenses", {
         name: data.name,
         amount: data.amount,
@@ -131,6 +138,7 @@ export default function Expenses() {
       queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats/net-profit"] });
       setIsAddOpen(false);
+      form.reset();
       toast({
         title: "Başarılı",
         description: "Gider başarıyla eklendi",
@@ -221,7 +229,7 @@ export default function Expenses() {
   };
   
   return (
-    <div className="container py-6">
+    <div className="container max-w-6xl mx-auto py-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
           <h1 className="text-2xl font-medium text-gray-darkest">Giderler</h1>
