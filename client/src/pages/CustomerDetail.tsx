@@ -282,7 +282,7 @@ export default function CustomerDetail() {
                                           : "bg-blue-100 text-blue-800"
                                       }
                                     >
-                                      {getJobStatusDisplay(job.status).text}
+                                      {getJobStatusDisplay(job.status).label}
                                     </Badge>
                                   </TableCell>
                                   <TableCell>
