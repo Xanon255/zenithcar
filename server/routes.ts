@@ -34,6 +34,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(customer);
   });
   
+  // Fetch customer vehicles
+  app.get("/api/customers/:id/vehicles", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid customer ID" });
+    }
+    
+    const vehicles = await storage.getVehiclesByCustomer(id);
+    res.json(vehicles);
+  });
+  
+  // Fetch customer jobs
+  app.get("/api/customers/:id/jobs", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid customer ID" });
+    }
+    
+    const jobs = await storage.getJobsByCustomer(id);
+    res.json(jobs);
+  });
+  
+  // Fetch customer analytics
+  app.get("/api/customers/:id/analytics", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid customer ID" });
+    }
+    
+    const analytics = await storage.getCustomerAnalytics(id);
+    if (!analytics) {
+      return res.json({
+        totalJobs: 0,
+        totalAmount: 0,
+        completedJobs: 0,
+        pendingPayments: 0
+      });
+    }
+    
+    res.json(analytics);
+  });
+  
   app.post("/api/customers", async (req, res) => {
     try {
       const data = insertCustomerSchema.parse(req.body);

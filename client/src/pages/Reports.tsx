@@ -90,8 +90,7 @@ export default function Reports() {
   // Fetch jobs to generate chart data - Tüm işleri alır, durum filtresi uygulanmaz
   const jobsQuery = useQuery<any[]>({
     queryKey: ["/api/jobs"],
-    staleTime: 0, // Her zaman güncel veri almak için
-    cacheTime: 0 // Önbelleğe almayı devre dışı bırak
+    refetchInterval: 3000 // Her 3 saniyede bir yenile
   });
   
   // Fetch payment method stats

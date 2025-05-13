@@ -9,6 +9,7 @@ import Dashboard from "@/pages/Dashboard";
 import NewJob from "@/pages/NewJob";
 import ViewJob from "@/pages/ViewJob";
 import Customers from "@/pages/Customers";
+import CustomerDetail from "@/pages/CustomerDetail";
 import Reports from "@/pages/Reports";
 import PriceList from "@/pages/PriceList";
 import VehicleList from "@/pages/VehicleList";
@@ -26,6 +27,7 @@ function Router() {
         <Route path="/jobs" component={Dashboard} />
         <Route path="/jobs/:id" component={ViewJob} />
         <Route path="/customers" component={Customers} />
+        <Route path="/customer/:id" component={CustomerDetail} />
         <Route path="/expenses" component={Expenses} />
         <Route path="/reports" component={Reports} />
         <Route path="/price-list" component={PriceList} />
