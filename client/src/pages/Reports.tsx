@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, subDays } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -83,7 +83,7 @@ export default function Reports() {
   const formattedEndDate = format(dateRange.end, "yyyy-MM-dd");
   
   // Bugünün tarihini ayarla
-  const today = useMemo(() => new Date(), []);
+  const today = new Date();
 
   // Fetch statistics for the date range
   const statsQuery = useQuery<DailyStats>({
@@ -108,7 +108,7 @@ export default function Reports() {
   
   // Fetch net profit stats
   const netProfitQuery = useQuery<NetProfitStats>({
-    queryKey: [`/api/stats/net-profit?startDate=${format(today, "yyyy-MM-01")}&endDate=${format(new Date(today.getFullYear(), today.getMonth() + 1, 0), "yyyy-MM-dd")}`],
+    queryKey: [`/api/stats/net-profit?startDate=${format(new Date(), "yyyy-MM-01")}&endDate=${format(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0), "yyyy-MM-dd")}`],
     refetchInterval: 5000, // Her 5 saniyede bir yenile
     staleTime: 0, // Her zaman güncel veri al
   });
