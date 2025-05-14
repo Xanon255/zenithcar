@@ -21,7 +21,7 @@ const PostgresSessionStore = connectPg(session);
 const scryptAsync = promisify(scrypt);
 
 // Şifre hashleme fonksiyonu
-async function hashPassword(password: string) {
+export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString("hex")}.${salt}`;
@@ -97,40 +97,12 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Kullanıcı kaydı API'si
-  app.post("/api/register", async (req, res, next) => {
-    try {
-      const existingUser = await storage.getUserByUsername(req.body.username);
-      
-      if (existingUser) {
-        return res.status(400).json({ error: "Bu kullanıcı adı zaten kullanılıyor" });
-      }
-
-      // Şifreyi hashle
-      const hashedPassword = await hashPassword(req.body.password);
-      
-      // Form verilerini schema ile uyumlu hale getir
-      const userData = {
-        username: req.body.username,
-        password: hashedPassword,
-        fullName: req.body.name || req.body.fullName || req.body.username,
-        isAdmin: !!req.body.isAdmin
-      };
-      
-      // Kullanıcıyı oluştur
-      const user = await storage.createUser(userData);
-
-      // Otomatik giriş yap
-      req.login(user, (err) => {
-        if (err) return next(err);
-        
-        // Şifreyi API yanıtından çıkart
-        const { password, ...userWithoutPassword } = user;
-        res.status(201).json(userWithoutPassword);
-      });
-    } catch (error) {
-      next(error);
-    }
+  // NOT: Kullanıcı kaydı API'si devre dışı bırakıldı - Yeni kullanıcılar sadece yöneticiler tarafından eklenebilir
+  // Kullanıcı oluşturma işlemi /api/users endpoint'i üzerinden yapılmalıdır
+  app.post("/api/register", async (req, res) => {
+    return res.status(403).json({ 
+      error: "Doğrudan kayıt kapatılmıştır. Yeni kullanıcılar sadece yöneticiler tarafından eklenebilir." 
+    });
   });
 
   // Giriş API'si

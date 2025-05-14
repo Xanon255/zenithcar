@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { getBackupFiles, performManualBackup } from "./backup";
 import { z } from "zod";
-import { setupAuth, requireAuth, hashExistingPasswords } from "./auth";
+import { setupAuth, requireAuth, hashExistingPasswords, hashPassword } from "./auth";
 import { 
   insertCustomerSchema, 
   insertVehicleSchema, 
@@ -533,73 +533,158 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).end();
   });
   
-  // Users API
-  app.get("/api/users", async (req, res) => {
-    const users = await storage.getUsers();
-    res.json(users);
-  });
-  
-  app.get("/api/users/:id", async (req, res) => {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ message: "Invalid user ID" });
-    }
-    
-    const user = await storage.getUser(id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    
-    res.json(user);
-  });
-  
-  app.post("/api/users", async (req, res) => {
+  // Users API - Only admin can access
+  app.get("/api/users", requireAuth, async (req, res) => {
     try {
-      const data = insertUserSchema.parse(req.body);
-      const user = await storage.createUser(data);
-      res.status(201).json(user);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid user data", errors: error.errors });
-      }
-      res.status(500).json({ message: "An error occurred while creating the user" });
-    }
-  });
-  
-  app.put("/api/users/:id", async (req, res) => {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ message: "Invalid user ID" });
-    }
-    
-    try {
-      const data = insertUserSchema.partial().parse(req.body);
-      const user = await storage.updateUser(id, data);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
+      // Sadece yöneticiler tüm kullanıcıları listeleyebilir
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ error: "Bu işlemi yapmak için yönetici olmanız gerekiyor" });
       }
       
-      res.json(user);
+      const users = await storage.getUsers();
+      res.json(users);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid user data", errors: error.errors });
-      }
-      res.status(500).json({ message: "An error occurred while updating the user" });
+      console.error("Kullanıcıları listelerken hata:", error);
+      res.status(500).json({ message: "Kullanıcılar listelenirken bir hata oluştu" });
     }
   });
   
-  app.delete("/api/users/:id", async (req, res) => {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ message: "Invalid user ID" });
+  app.get("/api/users/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Geçersiz kullanıcı ID" });
+      }
+      
+      // Kullanıcı sadece kendi bilgilerini veya yöneticiyse başkalarının bilgilerini görüntüleyebilir
+      if (id !== req.user?.id && !req.user?.isAdmin) {
+        return res.status(403).json({ error: "Bu işlemi yapmak için yetkiniz bulunmuyor" });
+      }
+      
+      const user = await storage.getUser(id);
+      if (!user) {
+        return res.status(404).json({ message: "Kullanıcı bulunamadı" });
+      }
+      
+      // Şifreyi API yanıtından çıkar
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Kullanıcı bilgileri alınırken hata:", error);
+      res.status(500).json({ message: "Kullanıcı bilgileri alınırken bir hata oluştu" });
     }
-    
-    const success = await storage.deleteUser(id);
-    if (!success) {
-      return res.status(404).json({ message: "User not found" });
+  });
+  
+  app.post("/api/users", requireAuth, async (req, res) => {
+    try {
+      // Sadece yöneticiler kullanıcı oluşturabilir
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ error: "Bu işlemi yapmak için yönetici olmanız gerekiyor" });
+      }
+      
+      // Form verilerini doğrula
+      const formData = insertUserSchema.parse(req.body);
+      
+      // Şifreyi hashle
+      const hashedPassword = await hashPassword(formData.password);
+      
+      // Kullanıcı verisini oluştur
+      const userData = {
+        ...formData,
+        password: hashedPassword,
+        fullName: formData.fullName || req.body.name || formData.username,
+      };
+      
+      const user = await storage.createUser(userData);
+      
+      // Şifreyi API yanıtından çıkar
+      const { password, ...userWithoutPassword } = user;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Geçersiz kullanıcı verisi", errors: error.errors });
+      }
+      res.status(500).json({ message: "Kullanıcı oluşturulurken bir hata oluştu" });
     }
-    
-    res.status(204).end();
+  });
+  
+  app.put("/api/users/:id", requireAuth, async (req, res) => {
+    try {
+      // Sadece yöneticiler başka kullanıcıları güncelleyebilir
+      // Kullanıcılar sadece kendi bilgilerini güncelleyebilir
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Geçersiz kullanıcı ID" });
+      }
+      
+      // Eğer kullanıcı kendi dışında birini güncellemeye çalışıyorsa ve admin değilse izin verme
+      if (id !== req.user?.id && !req.user?.isAdmin) {
+        return res.status(403).json({ error: "Bu işlemi yapmak için yetkiniz bulunmuyor" });
+      }
+      
+      // Form verilerini doğrula
+      const formData = insertUserSchema.partial().parse(req.body);
+      
+      // Eğer şifre güncellemesi varsa, hashleme işlemi yap
+      let updateData = { ...formData };
+      if (formData.password) {
+        updateData.password = await hashPassword(formData.password);
+      }
+      
+      // Kullanıcıyı güncelle
+      const user = await storage.updateUser(id, updateData);
+      if (!user) {
+        return res.status(404).json({ message: "Kullanıcı bulunamadı" });
+      }
+      
+      // Şifreyi API yanıtından çıkar
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Geçersiz kullanıcı verisi", errors: error.errors });
+      }
+      res.status(500).json({ message: "Kullanıcı güncellenirken bir hata oluştu" });
+    }
+  });
+  
+  app.delete("/api/users/:id", requireAuth, async (req, res) => {
+    try {
+      // ID'yi doğrula
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Geçersiz kullanıcı ID" });
+      }
+      
+      // Sadece yöneticiler kullanıcı silebilir
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ error: "Bu işlemi yapmak için yönetici olmanız gerekiyor" });
+      }
+      
+      // Son yöneticiyi silmeye çalışıyorsa engelle
+      if (id === req.user.id) {
+        // Başka admin var mı kontrol et
+        const users = await storage.getUsers();
+        const adminCount = users.filter(user => user.isAdmin).length;
+        
+        if (adminCount <= 1) {
+          return res.status(400).json({ 
+            message: "Son yönetici hesabınızı silemezsiniz. Önce başka bir yönetici hesabı oluşturun." 
+          });
+        }
+      }
+      
+      // Kullanıcıyı sil
+      const success = await storage.deleteUser(id);
+      if (!success) {
+        return res.status(404).json({ message: "Kullanıcı bulunamadı" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      console.error("Kullanıcı silinirken hata:", error);
+      res.status(500).json({ message: "Kullanıcı silinirken bir hata oluştu" });
+    }
   });
   
   // Statistics API
