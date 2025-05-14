@@ -28,6 +28,7 @@ type RegisterData = {
   password: string;
   name?: string;
   email?: string;
+  isAdmin?: boolean;
 };
 
 type ChangePasswordData = {

@@ -109,11 +109,16 @@ export function setupAuth(app: Express) {
       // Şifreyi hashle
       const hashedPassword = await hashPassword(req.body.password);
       
-      // Kullanıcıyı oluştur
-      const user = await storage.createUser({
-        ...req.body,
+      // Form verilerini schema ile uyumlu hale getir
+      const userData = {
+        username: req.body.username,
         password: hashedPassword,
-      });
+        fullName: req.body.name || req.body.fullName || req.body.username,
+        isAdmin: !!req.body.isAdmin
+      };
+      
+      // Kullanıcıyı oluştur
+      const user = await storage.createUser(userData);
 
       // Otomatik giriş yap
       req.login(user, (err) => {

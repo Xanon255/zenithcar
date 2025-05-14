@@ -35,6 +35,14 @@ const registerSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
+// Sunucuya gönderilecek kayıt verileri
+type ServerRegisterData = {
+  username: string;
+  password: string;
+  name?: string; // Sunucu tarafında fullName'e dönüştürülecek
+  isAdmin?: boolean;
+};
+
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<string>("login");
   const [, setLocation] = useLocation();
@@ -71,7 +79,14 @@ export default function AuthPage() {
   };
 
   const handleRegisterSubmit = (values: RegisterFormValues) => {
-    registerMutation.mutate(values);
+    // Form verilerini sunucu formatına dönüştür
+    const serverData: ServerRegisterData = {
+      username: values.username,
+      password: values.password,
+      name: values.name || ''
+    };
+    
+    registerMutation.mutate(serverData);
   };
 
   if (isLoading) {
