@@ -4,11 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { formatDate } from "@/lib/utils";
 
 export default function Settings() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Örnek sistem ayarları
   const [systemSettings, setSystemSettings] = useState({
@@ -28,6 +32,90 @@ export default function Settings() {
     promotionalMessages: false,
     dailySummary: true
   });
+  
+  // Yedekleme ayarları
+  const [backupSettings, setBackupSettings] = useState({
+    autoBackupEnabled: false
+  });
+  
+  // Yedekleme dosyaları listesi
+  interface BackupFile {
+    filename: string;
+    path: string;
+    timestamp: string;
+    size: number;
+  }
+  
+  // Yedekleme ayarlarını getir
+  const { data: backupSettingsData, isLoading: isLoadingSettings } = useQuery({
+    queryKey: ['/api/backup/settings'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/backup/settings');
+      return res.json();
+    }
+  });
+  
+  // Yedekleme dosyalarını getir
+  const { data: backupFiles, isLoading: isLoadingBackups } = useQuery({
+    queryKey: ['/api/backup/list'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/backup/list');
+      return res.json() as Promise<BackupFile[]>;
+    }
+  });
+  
+  // Ayarları kaydetme mutation
+  const saveBackupSettingsMutation = useMutation({
+    mutationFn: async (settings: { autoBackupEnabled: boolean }) => {
+      const res = await apiRequest('POST', '/api/backup/settings', settings);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Ayarlar kaydedildi",
+        description: "Yedekleme ayarları başarıyla güncellendi."
+      });
+      // Query cache'i yenile
+      queryClient.invalidateQueries({ queryKey: ['/api/backup/settings'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Hata",
+        description: "Ayarlar kaydedilirken bir hata oluştu.",
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Manuel yedekleme mutation
+  const manualBackupMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/backup/manual');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Yedekleme tamamlandı",
+        description: "Manuel yedekleme başarıyla tamamlandı."
+      });
+      // Yedekleme listesini yenile
+      queryClient.invalidateQueries({ queryKey: ['/api/backup/list'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Hata",
+        description: "Yedekleme yapılırken bir hata oluştu.",
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Ayarları yükle
+  useEffect(() => {
+    if (backupSettingsData) {
+      setBackupSettings(backupSettingsData);
+    }
+  }, [backupSettingsData]);
   
   const handleSystemInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -302,16 +390,54 @@ export default function Settings() {
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="auto-backup" 
-                    checked={false}
+                    checked={backupSettings.autoBackupEnabled}
+                    disabled={isLoadingSettings || saveBackupSettingsMutation.isPending}
                     onCheckedChange={(checked) => {
-                      toast({
-                        title: checked ? "Otomatik yedekleme aktif" : "Otomatik yedekleme devre dışı",
-                        description: checked ? "Verileriniz günlük olarak yedeklenecek" : "Otomatik yedekleme kapatıldı"
-                      });
+                      // Ayarları kaydet
+                      saveBackupSettingsMutation.mutate({ autoBackupEnabled: checked });
                     }}
                   />
-                  <Label htmlFor="auto-backup">Otomatik yedekleme</Label>
+                  <Label htmlFor="auto-backup">Otomatik yedekleme {isLoadingSettings ? '(Yükleniyor...)' : ''}</Label>
                 </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  {backupSettings.autoBackupEnabled 
+                    ? "Otomatik yedekleme aktif: Verileriniz her gece saat 00:00'da yedeklenecektir." 
+                    : "Otomatik yedekleme devre dışı."}
+                </p>
+              </div>
+              
+              {/* Yedekleme listesi */}
+              <div>
+                <h3 className="font-medium mb-2">Yedekleme Geçmişi</h3>
+                <p className="text-sm text-gray-500 mb-4">Önceki yedeklemeler</p>
+                
+                <div className="border rounded-md divide-y">
+                  {isLoadingBackups ? (
+                    <div className="p-4 text-center">Yedeklemeler yükleniyor...</div>
+                  ) : backupFiles && backupFiles.length > 0 ? (
+                    backupFiles.map((file, index) => (
+                      <div key={index} className="p-3 flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{file.filename}</div>
+                          <div className="text-sm text-gray-500">
+                            {formatDate(file.timestamp)} • {(file.size / 1024).toFixed(2)} KB
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-gray-500">Henüz yedekleme yapılmamış</div>
+                  )}
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  className="mt-4"
+                  disabled={manualBackupMutation.isPending}
+                  onClick={() => manualBackupMutation.mutate()}
+                >
+                  {manualBackupMutation.isPending ? "Yedekleniyor..." : "Manuel Yedek Al"}
+                </Button>
               </div>
               
               <div>

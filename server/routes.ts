@@ -54,6 +54,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Geri yükleme işlemi sırasında bir hata oluştu: " + error.message });
     }
   });
+  
+  // Yedekleme dosyalarını listele
+  app.get("/api/backup/list", async (req, res) => {
+    try {
+      const backupFiles = await getBackupFiles();
+      res.json(backupFiles);
+    } catch (error: any) {
+      console.error("Yedekleme dosyaları listelenirken hata:", error);
+      res.status(500).json({ message: "Yedekleme dosyaları listelenirken hata oluştu: " + error.message });
+    }
+  });
+  
+  // Manuel yedekleme yap
+  app.post("/api/backup/manual", async (req, res) => {
+    try {
+      const backupPath = await performManualBackup();
+      
+      if (backupPath) {
+        res.json({ 
+          message: "Manuel yedekleme başarıyla tamamlandı", 
+          backupPath,
+          success: true 
+        });
+      } else {
+        res.status(500).json({ message: "Manuel yedekleme başarısız oldu" });
+      }
+    } catch (error: any) {
+      console.error("Manuel yedekleme hatası:", error);
+      res.status(500).json({ message: "Manuel yedekleme sırasında hata oluştu: " + error.message });
+    }
+  });
+  
+  // Yedekleme ayarlarını kaydet
+  app.post("/api/backup/settings", async (req, res) => {
+    try {
+      const { autoBackupEnabled } = req.body;
+      
+      // Otomatik yedekleme ayarını kaydet
+      await storage.setSetting('auto_backup_enabled', autoBackupEnabled ? 'true' : 'false');
+      
+      res.json({ 
+        message: "Yedekleme ayarları kaydedildi", 
+        settings: { autoBackupEnabled },
+        success: true 
+      });
+    } catch (error: any) {
+      console.error("Yedekleme ayarları kaydedilirken hata:", error);
+      res.status(500).json({ message: "Ayarlar kaydedilirken hata oluştu: " + error.message });
+    }
+  });
+  
+  // Yedekleme ayarlarını getir
+  app.get("/api/backup/settings", async (req, res) => {
+    try {
+      const autoBackupEnabled = await storage.getSetting('auto_backup_enabled');
+      
+      res.json({
+        autoBackupEnabled: autoBackupEnabled === 'true'
+      });
+    } catch (error: any) {
+      console.error("Yedekleme ayarları alınırken hata:", error);
+      res.status(500).json({ message: "Ayarlar alınırken hata oluştu: " + error.message });
+    }
+  });
+  
   // Customers API
   app.get("/api/customers", async (req, res) => {
     const customers = await storage.getCustomers();
