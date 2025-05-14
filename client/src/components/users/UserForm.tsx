@@ -76,6 +76,12 @@ export default function UserForm({ userId }: UserFormProps) {
         isAdmin: data.isAdmin
       };
       const res = await apiRequest("POST", "/api/users", userData);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Kullanıcı oluşturulurken bir hata oluştu");
+      }
+      
       return res.json();
     },
     onSuccess: () => {
@@ -86,10 +92,10 @@ export default function UserForm({ userId }: UserFormProps) {
       });
       form.reset();
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Hata",
-        description: "Kullanıcı oluşturulurken bir hata oluştu.",
+        description: error.message || "Kullanıcı oluşturulurken bir hata oluştu.",
         variant: "destructive",
       });
     },
@@ -110,6 +116,12 @@ export default function UserForm({ userId }: UserFormProps) {
       }
       
       const res = await apiRequest("PUT", `/api/users/${id}`, userData);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Kullanıcı güncellenirken bir hata oluştu");
+      }
+      
       return res.json();
     },
     onSuccess: () => {
@@ -119,10 +131,10 @@ export default function UserForm({ userId }: UserFormProps) {
         description: "Kullanıcı başarıyla güncellendi.",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Hata",
-        description: "Kullanıcı güncellenirken bir hata oluştu.",
+        description: error.message || "Kullanıcı güncellenirken bir hata oluştu.",
         variant: "destructive",
       });
     },

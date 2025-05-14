@@ -24,14 +24,12 @@ export default function Users() {
     onSuccess: () => {
       setError(null);
     },
-  });
-  
-  // Error handling
-  useEffect(() => {
-    if (isError) {
+    onError: () => {
       setError("Kullanıcı verileri alınamadı. Yetki hatası olabilir.");
     }
-  }, [isError]);
+  });
+  
+  // Artık onError callback'inde hata işlemesi yapıldığı için bu useEffect'e gerek kalmadı
   
   const handleAddUser = () => {
     setSelectedUserId(undefined);

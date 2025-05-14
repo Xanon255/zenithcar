@@ -114,7 +114,14 @@ export default function UsersTable({
   // Delete user mutation
   const deleteUserMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/users/${id}`);
+      const res = await apiRequest("DELETE", `/api/users/${id}`);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Kullanıcı silinirken bir hata oluştu");
+      }
+      
+      return res;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
@@ -124,10 +131,10 @@ export default function UsersTable({
       });
       setUserToDelete(null);
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Hata",
-        description: "Kullanıcı silinirken bir hata oluştu.",
+        description: error.message || "Kullanıcı silinirken bir hata oluştu.",
         variant: "destructive",
       });
     },
