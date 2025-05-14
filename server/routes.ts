@@ -589,10 +589,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/expenses", async (req, res) => {
     try {
-      const data = insertExpenseSchema.parse(req.body);
+      // Gelen veriyi log'la
+      console.log("Gelen gider verisi:", req.body);
+      
+      // amount stringse number'a çevir
+      if (typeof req.body.amount === 'string') {
+        req.body.amount = parseFloat(req.body.amount);
+      }
+      
+      // date string ise Date'e çevir
+      if (typeof req.body.date === 'string') {
+        req.body.date = new Date(req.body.date);
+      }
+      
+      const data = await insertExpenseSchema.parseAsync(req.body);
+      console.log("Parse edilmiş veri:", data);
+      
       const expense = await storage.createExpense(data);
       res.status(201).json(expense);
     } catch (error) {
+      console.error("Gider oluşturma hatası:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid expense data", errors: error.errors });
       }

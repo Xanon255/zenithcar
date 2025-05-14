@@ -2,6 +2,19 @@ import { pgTable, text, serial, integer, boolean, numeric, timestamp, primaryKey
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Define payment method enum
+export const paymentMethodEnum = z.enum(["nakit", "kredi_karti", "havale_eft"]);
+export type PaymentMethod = z.infer<typeof paymentMethodEnum>;
+
+// Define job status enum
+export const jobStatusEnum = z.enum(["bekliyor", "devam_ediyor", "tamamlandi", "iptal"]);
+export type JobStatus = z.infer<typeof jobStatusEnum>;
+
+// Define expense categories
+export const EXPENSE_CATEGORIES = ["malzeme", "kira", "su", "elektrik", "personel", "diger"] as const;
+export const expenseCategoryEnum = z.enum(EXPENSE_CATEGORIES);
+export type ExpenseCategory = z.infer<typeof expenseCategoryEnum>;
+
 // Customers table
 export const customers = pgTable("customers", {
   id: serial("id").primaryKey(),
@@ -49,10 +62,6 @@ export const services = pgTable("services", {
 export const insertServiceSchema = createInsertSchema(services).omit({
   id: true,
 });
-
-// Define payment methods enum
-export const paymentMethodEnum = z.enum(["nakit", "kredi_karti", "havale_eft"]);
-export type PaymentMethod = z.infer<typeof paymentMethodEnum>;
 
 // Jobs table
 export const jobs = pgTable("jobs", {
@@ -110,6 +119,11 @@ export const expenses = pgTable("expenses", {
 
 export const insertExpenseSchema = createInsertSchema(expenses).omit({
   id: true,
+}).extend({
+  amount: z.union([z.number(), z.string()]).transform(val => 
+    typeof val === 'string' ? parseFloat(val) : val
+  ),
+  category: expenseCategoryEnum,
 });
 
 // Customer Analysis view for aggregating customer spending
@@ -143,11 +157,3 @@ export type Expense = typeof expenses.$inferSelect;
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 
 export type CustomerAnalytic = typeof customerAnalytics.$inferSelect;
-
-// Define zod schemas for frontend validation
-export const jobStatusEnum = z.enum(["bekliyor", "devam_ediyor", "tamamlandi", "iptal"]);
-export type JobStatus = z.infer<typeof jobStatusEnum>;
-
-// Define expense categories enum
-export const expenseCategoryEnum = z.enum(["malzeme", "kira", "su", "elektrik", "personel", "diger"]);
-export type ExpenseCategory = z.infer<typeof expenseCategoryEnum>;
