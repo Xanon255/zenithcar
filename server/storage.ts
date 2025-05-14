@@ -169,7 +169,7 @@ export class DatabaseStorage implements IStorage {
     
     // Son ziyaret tarihi
     const lastVisitResult = await db.select({
-      lastVisit: max(jobs.date)
+      lastVisit: max(jobs.createdAt)
     })
     .from(jobs)
     .where(eq(jobs.customerId, customerId));
@@ -530,23 +530,21 @@ export class DatabaseStorage implements IStorage {
     const methods = ['nakit', 'kredi_karti', 'havale_eft'];
     
     for (const method of methods) {
-      const result = await db
-        .select({
-          count: count().mapWith(Number),
-          total: sum(jobs.totalAmount).mapWith(Number)
-        })
-        .from(jobs)
-        .where(
-          and(
-            eq(jobs.paymentMethod, method),
-            eq(jobs.isPaid, true)
-          )
-        );
+      // Sadece tamamen ödenmiş işleri say (paid_amount >= total_amount)
+      const result = await db.execute(sql`
+        SELECT 
+          COUNT(*) as count,
+          SUM(CAST(total_amount AS numeric)) as total
+        FROM jobs
+        WHERE payment_method = ${method}
+        AND CAST(paid_amount AS numeric) >= CAST(total_amount AS numeric)
+        AND status != 'iptal'
+      `);
       
       stats.push({
         method,
-        count: result[0]?.count || 0,
-        total: result[0]?.total || 0
+        count: parseInt(result.rows[0]?.count || '0'),
+        total: parseFloat(result.rows[0]?.total || '0')
       });
     }
     
