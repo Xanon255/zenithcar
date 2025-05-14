@@ -90,7 +90,7 @@ function Router() {
           <VehicleList />
         </Layout>
       </ProtectedRoute>
-      <ProtectedRoute path="/users">
+      <ProtectedRoute path="/users" adminOnly={true}>
         <Layout>
           <Users />
         </Layout>
