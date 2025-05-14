@@ -67,7 +67,7 @@ export default function AuthPage() {
   // Login hatası olduğunda form hatasını güncelle
   useEffect(() => {
     if (loginMutation.isError) {
-      setFormError((loginMutation.error as Error)?.message || "Giriş başarısız oldu. Lütfen bilgilerinizi kontrol edin.");
+      setFormError((loginMutation.error as Error)?.message || "Kullanıcı adı veya şifre hatalı");
     } else {
       setFormError(null);
     }

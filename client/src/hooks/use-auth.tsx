@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || 'Giriş başarısız');
+        throw new Error(errorData.error || 'Kullanıcı adı veya şifre hatalı');
       }
       
       return res.json();

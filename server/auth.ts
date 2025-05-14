@@ -111,7 +111,7 @@ export function setupAuth(app: Express) {
       if (err) return next(err);
       
       if (!user) {
-        return res.status(401).json({ error: info.message || "Giriş başarısız" });
+        return res.status(401).json({ error: "Kullanıcı adı veya şifre hatalı" });
       }
       
       req.login(user, (err) => {
