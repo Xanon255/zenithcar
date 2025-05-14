@@ -249,12 +249,47 @@ export default function Settings() {
                 <h3 className="font-medium mb-2">Manuel Yedekleme</h3>
                 <p className="text-sm text-gray-500 mb-4">Tüm sistem verilerinizin yedeğini alın</p>
                 <Button
-                  onClick={() => {
-                    window.open('/api/backup/export', '_blank');
-                    toast({
-                      title: "Yedekleme başlatıldı",
-                      description: "Yedekleme dosyası indirilecek"
-                    });
+                  onClick={async () => {
+                    try {
+                      toast({
+                        title: "Yedekleme başlatıldı",
+                        description: "Lütfen bekleyin..."
+                      });
+                      
+                      // Fetch ile dosyayı indir
+                      const response = await fetch('/api/backup/export');
+                      
+                      if (!response.ok) {
+                        throw new Error(`Yedekleme hatası: ${response.status} ${response.statusText}`);
+                      }
+                      
+                      // Blob olarak al
+                      const blob = await response.blob();
+                      
+                      // İndirme işlemi için bir link oluştur
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      const date = new Date().toISOString().split('T')[0];
+                      a.href = url;
+                      a.download = `zenith_car_backup_${date}.json`;
+                      document.body.appendChild(a);
+                      a.click();
+                      window.URL.revokeObjectURL(url);
+                      document.body.removeChild(a);
+                      
+                      toast({
+                        title: "Yedekleme tamamlandı",
+                        description: "Yedekleme dosyası indirildi"
+                      });
+                    } catch (error) {
+                      console.error("Yedekleme hatası:", error);
+                      
+                      toast({
+                        title: "Yedekleme hatası",
+                        description: error instanceof Error ? error.message : "Bilinmeyen bir hata oluştu",
+                        variant: "destructive"
+                      });
+                    }
                   }}
                 >
                   Yedek Al

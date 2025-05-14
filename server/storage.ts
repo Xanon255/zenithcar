@@ -187,7 +187,7 @@ export class DatabaseStorage implements IStorage {
     
     return {
       customerId: customerId,
-      totalSpent: Number(totalSpent),
+      totalSpent: totalSpent,
       jobCount: Number(jobCount),
       lastVisit: lastVisit as Date
     };

@@ -17,13 +17,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Backup & Restore API
   app.get("/api/backup/export", async (req, res) => {
     try {
+      console.log("Yedekleme işlemi başlatıldı");
       const backupData = await storage.exportBackup();
       
       // Dosya indirme header'larını ekle
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', `attachment; filename=zenith_car_backup_${new Date().toISOString().split('T')[0]}.json`);
       
-      res.json(backupData);
+      // Normal res.json yerine string olarak gönder
+      return res.send(JSON.stringify(backupData, null, 2));
     } catch (error: any) {
       console.error("Yedekleme hatası:", error);
       res.status(500).json({ message: "Yedekleme işlemi sırasında bir hata oluştu: " + error.message });
