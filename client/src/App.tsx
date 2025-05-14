@@ -3,6 +3,8 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/components/protected-route";
 import NotFound from "@/pages/not-found";
 import Layout from "@/components/layout/Layout";
 import Dashboard from "@/pages/Dashboard";
@@ -17,39 +19,110 @@ import Users from "@/pages/Users";
 import Expenses from "@/pages/Expenses";
 import Profile from "@/pages/Profile";
 import Settings from "@/pages/Settings";
+import AuthPage from "@/pages/auth-page";
 
 function Router() {
   return (
-    <Layout>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/new-job" component={NewJob} />
-        <Route path="/new-job/:id" component={NewJob} />
-        <Route path="/view-job/:id" component={ViewJob} />
-        <Route path="/jobs" component={Dashboard} />
-        <Route path="/jobs/:id" component={ViewJob} />
-        <Route path="/customers" component={Customers} />
-        <Route path="/customer/:id" component={CustomerDetail} />
-        <Route path="/expenses" component={Expenses} />
-        <Route path="/reports" component={Reports} />
-        <Route path="/price-list" component={PriceList} />
-        <Route path="/vehicle-list" component={VehicleList} />
-        <Route path="/users" component={Users} />
-        <Route path="/profile" component={Profile} />
-        <Route path="/settings" component={Settings} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      {/* Korumalı olmayan sayfalar */}
+      <Route path="/auth">
+        <AuthPage />
+      </Route>
+
+      {/* Korumalı sayfalar (oturum gerektirir) */}
+      <ProtectedRoute path="/">
+        <Layout>
+          <Dashboard />
+        </Layout>
+      </ProtectedRoute>
+      <ProtectedRoute path="/new-job">
+        <Layout>
+          <NewJob />
+        </Layout>
+      </ProtectedRoute>
+      <ProtectedRoute path="/new-job/:id">
+        <Layout>
+          <NewJob />
+        </Layout>
+      </ProtectedRoute>
+      <ProtectedRoute path="/view-job/:id">
+        <Layout>
+          <ViewJob />
+        </Layout>
+      </ProtectedRoute>
+      <ProtectedRoute path="/jobs">
+        <Layout>
+          <Dashboard />
+        </Layout>
+      </ProtectedRoute>
+      <ProtectedRoute path="/jobs/:id">
+        <Layout>
+          <ViewJob />
+        </Layout>
+      </ProtectedRoute>
+      <ProtectedRoute path="/customers">
+        <Layout>
+          <Customers />
+        </Layout>
+      </ProtectedRoute>
+      <ProtectedRoute path="/customer/:id">
+        <Layout>
+          <CustomerDetail />
+        </Layout>
+      </ProtectedRoute>
+      <ProtectedRoute path="/expenses">
+        <Layout>
+          <Expenses />
+        </Layout>
+      </ProtectedRoute>
+      <ProtectedRoute path="/reports">
+        <Layout>
+          <Reports />
+        </Layout>
+      </ProtectedRoute>
+      <ProtectedRoute path="/price-list">
+        <Layout>
+          <PriceList />
+        </Layout>
+      </ProtectedRoute>
+      <ProtectedRoute path="/vehicle-list">
+        <Layout>
+          <VehicleList />
+        </Layout>
+      </ProtectedRoute>
+      <ProtectedRoute path="/users">
+        <Layout>
+          <Users />
+        </Layout>
+      </ProtectedRoute>
+      <ProtectedRoute path="/profile">
+        <Layout>
+          <Profile />
+        </Layout>
+      </ProtectedRoute>
+      <ProtectedRoute path="/settings">
+        <Layout>
+          <Settings />
+        </Layout>
+      </ProtectedRoute>
+      
+      {/* 404 sayfası */}
+      <Route>
+        <NotFound />
+      </Route>
+    </Switch>
   );
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

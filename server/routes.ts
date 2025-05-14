@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { getBackupFiles, performManualBackup } from "./backup";
 import { z } from "zod";
+import { setupAuth, requireAuth, hashExistingPasswords } from "./auth";
 import { 
   insertCustomerSchema, 
   insertVehicleSchema, 
@@ -15,6 +16,11 @@ import {
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Kimlik doğrulama sistemini kur
+  setupAuth(app);
+  
+  // Mevcut şifreleri hashle (ilk kurulum için)
+  await hashExistingPasswords();
   // Backup & Restore API
   app.get("/api/backup/export", async (req, res) => {
     try {

@@ -1,0 +1,30 @@
+{
+  "customers": [],
+  "vehicles": [],
+  "services": [
+    {
+      "id": 3,
+      "name": "İÇ YIKAMA",
+      "price": "250",
+      "description": "İÇ YIKAMA"
+    },
+    {
+      "id": 2,
+      "name": "DIŞ YIKAMA",
+      "price": "250",
+      "description": "DIŞ YIKAMA"
+    },
+    {
+      "id": 1,
+      "name": "İÇ DIŞ YIKAMA",
+      "price": "400",
+      "description": "İÇ DIŞ DETAYLI TEMİZLİK"
+    }
+  ],
+  "jobs": [],
+  "jobServices": [],
+  "users": [],
+  "expenses": [],
+  "timestamp": "2025-05-14T13:27:53.399Z",
+  "version": "1.0.0"
+}
