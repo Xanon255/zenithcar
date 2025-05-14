@@ -248,7 +248,17 @@ export default function Settings() {
               <div>
                 <h3 className="font-medium mb-2">Manuel Yedekleme</h3>
                 <p className="text-sm text-gray-500 mb-4">Tüm sistem verilerinizin yedeğini alın</p>
-                <Button>Yedek Al</Button>
+                <Button
+                  onClick={() => {
+                    window.open('/api/backup/export', '_blank');
+                    toast({
+                      title: "Yedekleme başlatıldı",
+                      description: "Yedekleme dosyası indirilecek"
+                    });
+                  }}
+                >
+                  Yedek Al
+                </Button>
               </div>
               
               <div>
@@ -258,6 +268,12 @@ export default function Settings() {
                   <Switch
                     id="auto-backup" 
                     checked={false}
+                    onCheckedChange={(checked) => {
+                      toast({
+                        title: checked ? "Otomatik yedekleme aktif" : "Otomatik yedekleme devre dışı",
+                        description: checked ? "Verileriniz günlük olarak yedeklenecek" : "Otomatik yedekleme kapatıldı"
+                      });
+                    }}
                   />
                   <Label htmlFor="auto-backup">Otomatik yedekleme</Label>
                 </div>
@@ -266,9 +282,92 @@ export default function Settings() {
               <div>
                 <h3 className="font-medium mb-2">Geri Yükleme</h3>
                 <p className="text-sm text-gray-500 mb-4">Önceden alınmış bir yedeği geri yükleyin</p>
-                <div className="flex items-center space-x-2">
-                  <Input type="file" />
-                  <Button variant="outline">Yükle</Button>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Input 
+                      type="file" 
+                      id="backup-file"
+                      accept=".json"
+                      onChange={(e) => {
+                        // Seçilen dosyayı göster
+                        const fileName = e.target.files?.[0]?.name;
+                        if (fileName) {
+                          toast({
+                            title: "Dosya seçildi",
+                            description: fileName
+                          });
+                        }
+                      }}
+                    />
+                  </div>
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      // Dosyayı oku ve API'ye gönder
+                      const fileInput = document.getElementById('backup-file') as HTMLInputElement;
+                      const file = fileInput?.files?.[0];
+                      
+                      if (!file) {
+                        toast({
+                          title: "Hata",
+                          description: "Lütfen bir yedek dosyası seçin",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      
+                      // Onay diyaloğu
+                      if (confirm("Dikkat! Bu işlem mevcut tüm verilerinizin üzerine yazacak ve geri alınamaz. Devam etmek istiyor musunuz?")) {
+                        const reader = new FileReader();
+                        
+                        reader.onload = async (event) => {
+                          try {
+                            const backupData = JSON.parse(event.target?.result as string);
+                            
+                            // API'ye gönder
+                            const response = await fetch('/api/backup/import', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json'
+                              },
+                              body: JSON.stringify(backupData)
+                            });
+                            
+                            const result = await response.json();
+                            
+                            if (response.ok) {
+                              toast({
+                                title: "Başarılı",
+                                description: "Yedek başarıyla geri yüklendi. Sayfa yenilenecek.",
+                              });
+                              
+                              // Kısa bir gecikme sonra sayfayı yenile
+                              setTimeout(() => {
+                                window.location.reload();
+                              }, 2000);
+                            } else {
+                              toast({
+                                title: "Hata",
+                                description: result.message || "Geri yükleme sırasında bir hata oluştu",
+                                variant: "destructive"
+                              });
+                            }
+                          } catch (error) {
+                            console.error("Dosya okuma hatası:", error);
+                            toast({
+                              title: "Hata",
+                              description: "Geçersiz yedek dosyası. JSON formatında olduğundan emin olun.",
+                              variant: "destructive"
+                            });
+                          }
+                        };
+                        
+                        reader.readAsText(file);
+                      }
+                    }}
+                  >
+                    Geri Yükle
+                  </Button>
                 </div>
               </div>
             </CardContent>

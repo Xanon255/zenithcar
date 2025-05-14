@@ -88,6 +88,31 @@ export interface IStorage {
     totalExpenses: number;
     netProfit: number;
   }>;
+  
+  // Backup & Restore methods
+  exportBackup(): Promise<{
+    customers: Customer[];
+    vehicles: Vehicle[];
+    services: Service[];
+    jobs: Job[];
+    jobServices: JobService[];
+    users: User[];
+    expenses: Expense[];
+    timestamp: string;
+    version: string;
+  }>;
+  
+  importBackup(data: {
+    customers: Customer[];
+    vehicles: Vehicle[];
+    services: Service[];
+    jobs: Job[];
+    jobServices: JobService[];
+    users: User[];
+    expenses: Expense[];
+    timestamp: string;
+    version: string;
+  }): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -566,6 +591,143 @@ export class DatabaseStorage implements IStorage {
       totalExpenses,
       netProfit: totalRevenue - totalExpenses
     };
+  }
+  
+  // Backup & Restore methods
+  async exportBackup(): Promise<{
+    customers: Customer[];
+    vehicles: Vehicle[];
+    services: Service[];
+    jobs: Job[];
+    jobServices: JobService[];
+    users: User[];
+    expenses: Expense[];
+    timestamp: string;
+    version: string;
+  }> {
+    // Tüm verileri al
+    const customersData = await this.getCustomers();
+    const vehiclesData = await this.getVehicles();
+    const servicesData = await this.getServices();
+    const jobsData = await this.getJobs();
+    
+    // JobServices verisini al
+    const jobServicesData = await db.select().from(jobServices);
+    const usersData = await this.getUsers();
+    const expensesData = await this.getExpenses();
+    
+    // Şu anki zaman damgası ile yedek ver
+    return {
+      customers: customersData,
+      vehicles: vehiclesData,
+      services: servicesData,
+      jobs: jobsData,
+      jobServices: jobServicesData,
+      users: usersData,
+      expenses: expensesData,
+      timestamp: new Date().toISOString(),
+      version: "1.0.0" // Uygulama sürümü
+    };
+  }
+  
+  async importBackup(data: {
+    customers: Customer[];
+    vehicles: Vehicle[];
+    services: Service[];
+    jobs: Job[];
+    jobServices: JobService[];
+    users: User[];
+    expenses: Expense[];
+    timestamp: string;
+    version: string;
+  }): Promise<boolean> {
+    // Veritabanını sıfırla (mevcut verileri temizle)
+    try {
+      // İlişkisel bütünlüğü korumak için silme sırası önemli
+      await db.delete(jobServices);
+      await db.delete(jobs);
+      await db.delete(vehicles);
+      await db.delete(expenses);
+      await db.delete(customers);
+      
+      // Servisleri silme - Sadece sistem servisleri dışındakileri sil
+      const allServices = await db.select().from(services);
+      for (const service of allServices) {
+        if (service.id > 10) { // Sistem servisleri ID'leri 1-10 arasında varsayalım
+          await db.delete(services).where(eq(services.id, service.id));
+        }
+      }
+      
+      // Admin kullanıcıları silmemek için sadece normal kullanıcıları temizle
+      const allUsers = await db.select().from(users);
+      for (const user of allUsers) {
+        if (user.role !== 'admin') {
+          await db.delete(users).where(eq(users.id, user.id));
+        }
+      }
+      
+      // Verileri yükle
+      for (const customer of data.customers) {
+        await db.insert(customers).values({
+          ...customer,
+          id: undefined // ID'yi otomatik olarak oluştur
+        });
+      }
+      
+      for (const vehicle of data.vehicles) {
+        await db.insert(vehicles).values({
+          ...vehicle,
+          id: undefined
+        });
+      }
+      
+      for (const service of data.services) {
+        // Mevcut sistem servislerini atla
+        const existingService = allServices.find(s => s.name === service.name);
+        if (!existingService) {
+          await db.insert(services).values({
+            ...service,
+            id: undefined
+          });
+        }
+      }
+      
+      for (const job of data.jobs) {
+        await db.insert(jobs).values({
+          ...job,
+          id: undefined
+        });
+      }
+      
+      for (const jobService of data.jobServices) {
+        await db.insert(jobServices).values({
+          ...jobService,
+          id: undefined
+        });
+      }
+      
+      for (const user of data.users) {
+        // Admin olmayan kullanıcıları ekle
+        if (user.role !== 'admin') {
+          await db.insert(users).values({
+            ...user,
+            id: undefined
+          });
+        }
+      }
+      
+      for (const expense of data.expenses) {
+        await db.insert(expenses).values({
+          ...expense,
+          id: undefined
+        });
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Yedekten geri yükleme hatası:", error);
+      return false;
+    }
   }
 }
 

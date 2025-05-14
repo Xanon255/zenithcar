@@ -14,6 +14,43 @@ import {
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Backup & Restore API
+  app.get("/api/backup/export", async (req, res) => {
+    try {
+      const backupData = await storage.exportBackup();
+      
+      // Dosya indirme header'larını ekle
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename=zenith_car_backup_${new Date().toISOString().split('T')[0]}.json`);
+      
+      res.json(backupData);
+    } catch (error: any) {
+      console.error("Yedekleme hatası:", error);
+      res.status(500).json({ message: "Yedekleme işlemi sırasında bir hata oluştu: " + error.message });
+    }
+  });
+  
+  app.post("/api/backup/import", async (req, res) => {
+    try {
+      const backupData = req.body;
+      
+      // Basit doğrulama
+      if (!backupData || !backupData.timestamp || !backupData.version) {
+        return res.status(400).json({ message: "Geçersiz yedek dosyası" });
+      }
+      
+      const result = await storage.importBackup(backupData);
+      
+      if (result) {
+        res.json({ message: "Veriler başarıyla geri yüklendi", success: true });
+      } else {
+        res.status(500).json({ message: "Geri yükleme işlemi başarısız oldu" });
+      }
+    } catch (error: any) {
+      console.error("Geri yükleme hatası:", error);
+      res.status(500).json({ message: "Geri yükleme işlemi sırasında bir hata oluştu: " + error.message });
+    }
+  });
   // Customers API
   app.get("/api/customers", async (req, res) => {
     const customers = await storage.getCustomers();
