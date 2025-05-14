@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { 
-  customers, vehicles, services, jobs, jobServices, users, expenses, customerAnalytics,
+  customers, vehicles, services, jobs, jobServices, users, expenses, customerAnalytics, settings,
   type Customer, type InsertCustomer, 
   type Vehicle, type InsertVehicle, 
   type Service, type InsertService, 
@@ -8,7 +8,8 @@ import {
   type JobService, type InsertJobService, 
   type User, type InsertUser,
   type Expense, type InsertExpense,
-  type CustomerAnalytic
+  type CustomerAnalytic,
+  type Setting
 } from "@shared/schema";
 import { eq, and, desc, count, sum, max, isNull, sql } from "drizzle-orm";
 
@@ -113,6 +114,11 @@ export interface IStorage {
     timestamp: string;
     version: string;
   }): Promise<boolean>;
+  
+  // Settings methods
+  getSetting(key: string): Promise<string | undefined>;
+  setSetting(key: string, value: string): Promise<void>;
+  getAllSettings(): Promise<Setting[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -120,144 +126,131 @@ export class DatabaseStorage implements IStorage {
   async getCustomers(): Promise<Customer[]> {
     return await db.select().from(customers).orderBy(desc(customers.id));
   }
-
+  
   async getCustomer(id: number): Promise<Customer | undefined> {
     const result = await db.select().from(customers).where(eq(customers.id, id));
     return result[0];
   }
-
+  
   async createCustomer(customer: InsertCustomer): Promise<Customer> {
     const result = await db.insert(customers).values(customer).returning();
     return result[0];
   }
-
+  
   async updateCustomer(id: number, customer: Partial<InsertCustomer>): Promise<Customer | undefined> {
     const result = await db.update(customers).set(customer).where(eq(customers.id, id)).returning();
     return result[0];
   }
-
+  
   async deleteCustomer(id: number): Promise<boolean> {
     try {
       await db.delete(customers).where(eq(customers.id, id));
       return true;
     } catch (error) {
-      console.error("Error deleting customer:", error);
+      console.error("Müşteri silinirken hata oluştu:", error);
       return false;
     }
   }
-
+  
   async getCustomerAnalytics(customerId: number): Promise<CustomerAnalytic | undefined> {
-    // Calculate customer analytics on the fly
-    const totalSpentResult = await db
-      .select({
-        totalSpent: sum(jobs.totalAmount)
-      })
-      .from(jobs)
-      .where(
-        and(
-          eq(jobs.customerId, customerId),
-          // İptal edilmiş işleri müşteri analizine dahil etmiyoruz
-          sql`${jobs.status} != 'iptal'`
-        )
-      );
-      
-    const jobCountResult = await db
-      .select({
-        jobCount: count()
-      })
-      .from(jobs)
-      .where(
-        and(
-          eq(jobs.customerId, customerId),
-          // İptal edilmiş işleri müşteri analizine dahil etmiyoruz
-          sql`${jobs.status} != 'iptal'`
-        )
-      );
-      
-    const lastVisitResult = await db
-      .select({
-        lastVisit: max(jobs.createdAt)
-      })
-      .from(jobs)
-      .where(eq(jobs.customerId, customerId));
-      
+    // Toplam harcama
+    const totalSpentResult = await db.select({
+      totalSpent: sum(jobs.totalAmount).mapWith(Number)
+    })
+    .from(jobs)
+    .where(eq(jobs.customerId, customerId));
+    
+    // Toplam iş sayısı
+    const jobCountResult = await db.select({
+      jobCount: count(jobs.id)
+    })
+    .from(jobs)
+    .where(eq(jobs.customerId, customerId));
+    
+    // Son ziyaret tarihi
+    const lastVisitResult = await db.select({
+      lastVisit: max(jobs.date)
+    })
+    .from(jobs)
+    .where(eq(jobs.customerId, customerId));
+    
     const totalSpent = totalSpentResult[0]?.totalSpent || 0;
     const jobCount = jobCountResult[0]?.jobCount || 0;
     const lastVisit = lastVisitResult[0]?.lastVisit;
     
     return {
       customerId: customerId,
-      totalSpent: String(totalSpent), // Numeric alanı kesinlikle string olarak döndür
+      totalSpent: String(totalSpent), // string olarak dönüştür
       jobCount: Number(jobCount),
       lastVisit: lastVisit as Date
     };
   }
-
+  
   // Vehicle methods
   async getVehicles(): Promise<Vehicle[]> {
     return await db.select().from(vehicles).orderBy(desc(vehicles.id));
   }
-
+  
   async getVehiclesByCustomer(customerId: number): Promise<Vehicle[]> {
     return await db.select().from(vehicles).where(eq(vehicles.customerId, customerId));
   }
-
+  
   async getVehicle(id: number): Promise<Vehicle | undefined> {
     const result = await db.select().from(vehicles).where(eq(vehicles.id, id));
     return result[0];
   }
-
+  
   async getVehicleByPlate(plate: string): Promise<Vehicle | undefined> {
     const result = await db.select().from(vehicles).where(eq(vehicles.plate, plate));
     return result[0];
   }
-
+  
   async createVehicle(vehicle: InsertVehicle): Promise<Vehicle> {
     const result = await db.insert(vehicles).values(vehicle).returning();
     return result[0];
   }
-
+  
   async updateVehicle(id: number, vehicle: Partial<InsertVehicle>): Promise<Vehicle | undefined> {
     const result = await db.update(vehicles).set(vehicle).where(eq(vehicles.id, id)).returning();
     return result[0];
   }
-
+  
   async deleteVehicle(id: number): Promise<boolean> {
     try {
       await db.delete(vehicles).where(eq(vehicles.id, id));
       return true;
     } catch (error) {
-      console.error("Error deleting vehicle:", error);
+      console.error("Araç silinirken hata oluştu:", error);
       return false;
     }
   }
-
+  
   // Service methods
   async getServices(): Promise<Service[]> {
-    return await db.select().from(services).orderBy(services.name);
+    return await db.select().from(services).orderBy(desc(services.id));
   }
-
+  
   async getService(id: number): Promise<Service | undefined> {
     const result = await db.select().from(services).where(eq(services.id, id));
     return result[0];
   }
-
+  
   async createService(service: InsertService): Promise<Service> {
     const result = await db.insert(services).values(service).returning();
     return result[0];
   }
-
+  
   async updateService(id: number, service: Partial<InsertService>): Promise<Service | undefined> {
     const result = await db.update(services).set(service).where(eq(services.id, id)).returning();
     return result[0];
   }
-
+  
   async deleteService(id: number): Promise<boolean> {
     try {
       await db.delete(services).where(eq(services.id, id));
       return true;
     } catch (error) {
-      console.error("Error deleting service:", error);
+      console.error("Hizmet silinirken hata oluştu:", error);
       return false;
     }
   }
@@ -265,104 +258,98 @@ export class DatabaseStorage implements IStorage {
   async getPopularServices(): Promise<{name: string, count: number}[]> {
     const result = await db
       .select({
-        serviceId: jobServices.serviceId,
         name: services.name,
-        count: count(),
+        count: count(jobServices.serviceId).mapWith(Number)
       })
       .from(jobServices)
-      .leftJoin(services, eq(jobServices.serviceId, services.id))
-      .leftJoin(jobs, eq(jobServices.jobId, jobs.id))
-      .where(sql`${jobs.status} != 'iptal'`)
-      .groupBy(jobServices.serviceId, services.name)
-      .orderBy(desc(count()));
-      
-    return result.map(item => ({
-      name: item.name || "",
-      count: Number(item.count) || 0
-    }));
+      .innerJoin(services, eq(jobServices.serviceId, services.id))
+      .groupBy(services.name)
+      .orderBy(desc(count(jobServices.serviceId)));
+    
+    return result;
   }
-
+  
   // Job methods
   async getJobs(): Promise<Job[]> {
-    return await db.select().from(jobs).orderBy(desc(jobs.createdAt));
+    return await db.select().from(jobs).orderBy(desc(jobs.date), desc(jobs.id));
   }
-
+  
   async getJobsByDate(date: Date): Promise<Job[]> {
-    const startDate = new Date(date);
-    startDate.setHours(0, 0, 0, 0);
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
     
-    const endDate = new Date(date);
-    endDate.setHours(23, 59, 59, 999);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
     
     return await db
       .select()
       .from(jobs)
       .where(
         and(
-          sql`${jobs.createdAt} >= ${startDate}`,
-          sql`${jobs.createdAt} <= ${endDate}`
+          sql`${jobs.date} >= ${startOfDay}`,
+          sql`${jobs.date} <= ${endOfDay}`
         )
       )
-      .orderBy(desc(jobs.createdAt));
+      .orderBy(desc(jobs.date), desc(jobs.id));
   }
-
+  
   async getJobsByCustomer(customerId: number): Promise<Job[]> {
     return await db
       .select()
       .from(jobs)
       .where(eq(jobs.customerId, customerId))
-      .orderBy(desc(jobs.createdAt));
+      .orderBy(desc(jobs.date), desc(jobs.id));
   }
-
+  
   async getJob(id: number): Promise<Job | undefined> {
     const result = await db.select().from(jobs).where(eq(jobs.id, id));
     return result[0];
   }
-
+  
   async createJob(job: InsertJob): Promise<Job> {
     const result = await db.insert(jobs).values(job).returning();
     return result[0];
   }
-
+  
   async updateJob(id: number, job: Partial<InsertJob>): Promise<Job | undefined> {
     const result = await db.update(jobs).set(job).where(eq(jobs.id, id)).returning();
     return result[0];
   }
-
+  
   async deleteJob(id: number): Promise<boolean> {
     try {
-      // First delete related job services
+      // Önce ilişkili hizmetleri sil
       await db.delete(jobServices).where(eq(jobServices.jobId, id));
-      // Then delete the job
+      // Sonra işi sil
       await db.delete(jobs).where(eq(jobs.id, id));
       return true;
     } catch (error) {
-      console.error("Error deleting job:", error);
+      console.error("İş silinirken hata oluştu:", error);
       return false;
     }
   }
-
+  
   // JobService methods
   async getJobServices(jobId: number): Promise<Service[]> {
     const result = await db
       .select({
         id: services.id,
         name: services.name,
-        price: services.price,
-        description: services.description
+        description: services.description,
+        price: services.price
       })
       .from(jobServices)
       .innerJoin(services, eq(jobServices.serviceId, services.id))
       .where(eq(jobServices.jobId, jobId));
-      
+    
     return result;
   }
-
+  
   async addJobService(jobService: InsertJobService): Promise<JobService> {
     const result = await db.insert(jobServices).values(jobService).returning();
     return result[0];
   }
-
+  
   async removeJobService(jobId: number, serviceId: number): Promise<boolean> {
     try {
       await db
@@ -375,42 +362,42 @@ export class DatabaseStorage implements IStorage {
         );
       return true;
     } catch (error) {
-      console.error("Error removing job service:", error);
+      console.error("İş hizmeti kaldırılırken hata oluştu:", error);
       return false;
     }
   }
-
+  
   // User methods
   async getUsers(): Promise<User[]> {
-    return await db.select().from(users);
+    return await db.select().from(users).orderBy(desc(users.id));
   }
-
+  
   async getUser(id: number): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id));
     return result[0];
   }
-
+  
   async getUserByUsername(username: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.username, username));
     return result[0];
   }
-
+  
   async createUser(user: InsertUser): Promise<User> {
     const result = await db.insert(users).values(user).returning();
     return result[0];
   }
-
+  
   async updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined> {
     const result = await db.update(users).set(user).where(eq(users.id, id)).returning();
     return result[0];
   }
-
+  
   async deleteUser(id: number): Promise<boolean> {
     try {
       await db.delete(users).where(eq(users.id, id));
       return true;
     } catch (error) {
-      console.error("Error deleting user:", error);
+      console.error("Kullanıcı silinirken hata oluştu:", error);
       return false;
     }
   }
@@ -419,7 +406,7 @@ export class DatabaseStorage implements IStorage {
   async getExpenses(): Promise<Expense[]> {
     return await db.select().from(expenses).orderBy(desc(expenses.date));
   }
-
+  
   async getExpensesByCategory(category: string): Promise<Expense[]> {
     return await db
       .select()
@@ -427,7 +414,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(expenses.category, category))
       .orderBy(desc(expenses.date));
   }
-
+  
   async getExpensesByDateRange(startDate: Date, endDate: Date): Promise<Expense[]> {
     return await db
       .select()
@@ -440,12 +427,12 @@ export class DatabaseStorage implements IStorage {
       )
       .orderBy(desc(expenses.date));
   }
-
+  
   async getExpense(id: number): Promise<Expense | undefined> {
     const result = await db.select().from(expenses).where(eq(expenses.id, id));
     return result[0];
   }
-
+  
   async createExpense(expense: InsertExpense): Promise<Expense> {
     // Amount'u string'e çevir
     const expenseData = {
@@ -456,7 +443,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db.insert(expenses).values(expenseData).returning();
     return result[0];
   }
-
+  
   async updateExpense(id: number, expense: Partial<InsertExpense>): Promise<Expense | undefined> {
     const expenseData: any = {...expense};
     
@@ -468,13 +455,13 @@ export class DatabaseStorage implements IStorage {
     const result = await db.update(expenses).set(expenseData).where(eq(expenses.id, id)).returning();
     return result[0];
   }
-
+  
   async deleteExpense(id: number): Promise<boolean> {
     try {
       await db.delete(expenses).where(eq(expenses.id, id));
       return true;
     } catch (error) {
-      console.error("Error deleting expense:", error);
+      console.error("Gider silinirken hata oluştu:", error);
       return false;
     }
   }
@@ -486,54 +473,51 @@ export class DatabaseStorage implements IStorage {
     totalJobs: number;
     pendingPayments: number;
   }> {
-    const startDate = new Date(date);
-    startDate.setHours(0, 0, 0, 0);
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
     
-    const endDate = new Date(date);
-    endDate.setHours(23, 59, 59, 999);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
     
-    console.log("Günlük istatistik için tarih aralığı:", startDate, endDate);
+    console.log("Günlük istatistik için tarih aralığı:", startOfDay, endOfDay);
     console.log("Gelen tarih:", date);
     
-    // Tüm işleri al ve döndür (iptal edilenler hariç)
-    const allJobs = await db
+    // Bugünkü işleri bul
+    const todayJobs = await db
       .select()
       .from(jobs)
       .where(
         and(
-          sql`DATE(${jobs.createdAt}) = DATE(${date})`,
-          sql`${jobs.status} != 'iptal'`
+          sql`${jobs.date} >= ${startOfDay}`,
+          sql`${jobs.date} <= ${endOfDay}`
         )
       );
-      
-    console.log("Bulunan işler:", allJobs);
     
-    const jobsResult = await db
-      .select({
-        totalAmount: sum(jobs.totalAmount),
-        totalPaid: sum(jobs.paidAmount),
-        totalJobs: count(),
-      })
-      .from(jobs)
-      .where(
-        and(
-          sql`DATE(${jobs.createdAt}) = DATE(${date})`,
-          // İptal edilmiş işleri toplam tutara dahil etmiyoruz
-          sql`${jobs.status} != 'iptal'`
-        )
-      );
-      
-    const result = jobsResult[0];
+    console.log("Bulunan işler:", todayJobs);
     
-    const totalAmount = Number(result?.totalAmount || 0);
-    const totalPaid = Number(result?.totalPaid || 0);
-    const totalJobs = Number(result?.totalJobs || 0);
+    // İstatistikleri hesapla
+    let totalAmount = 0;
+    let totalPaid = 0;
+    let pendingPayments = 0;
+    
+    for (const job of todayJobs) {
+      if (job.status !== 'iptal') { // İptal olan işleri hesaba katma
+        const amount = parseFloat(job.totalAmount);
+        totalAmount += amount;
+        
+        if (job.isPaid) {
+          totalPaid += amount;
+        } else {
+          pendingPayments += amount;
+        }
+      }
+    }
     
     return {
       totalAmount,
       totalPaid,
-      totalJobs,
-      pendingPayments: totalAmount - totalPaid
+      totalJobs: todayJobs.filter(job => job.status !== 'iptal').length,
+      pendingPayments
     };
   }
   
@@ -542,27 +526,33 @@ export class DatabaseStorage implements IStorage {
     count: number;
     total: number;
   }[]> {
-    const result = await db
-      .select({
-        method: jobs.paymentMethod,
-        count: count(),
-        total: sum(jobs.paidAmount)
-      })
-      .from(jobs)
-      .where(
-        and(
-          sql`${jobs.paidAmount} > 0`,
-          // İptal edilmiş işleri istatistiklere dahil etmiyoruz
-          sql`${jobs.status} != 'iptal'`
-        )
-      )
-      .groupBy(jobs.paymentMethod);
+    const stats: { method: string; count: number; total: number }[] = [];
+    
+    // Ödeme yöntemlerine göre istatistik
+    const methods = ['nakit', 'kredi_karti', 'havale_eft'];
+    
+    for (const method of methods) {
+      const result = await db
+        .select({
+          count: count().mapWith(Number),
+          total: sum(jobs.totalAmount).mapWith(Number)
+        })
+        .from(jobs)
+        .where(
+          and(
+            eq(jobs.paymentMethod, method),
+            eq(jobs.isPaid, true)
+          )
+        );
       
-    return result.map(item => ({
-      method: item.method,
-      count: Number(item.count) || 0,
-      total: Number(item.total) || 0
-    }));
+      stats.push({
+        method,
+        count: result[0]?.count || 0,
+        total: result[0]?.total || 0
+      });
+    }
+    
+    return stats;
   }
   
   async getNetProfit(startDate: Date, endDate: Date): Promise<{
@@ -570,23 +560,24 @@ export class DatabaseStorage implements IStorage {
     totalExpenses: number;
     netProfit: number;
   }> {
+    // Bu tarih aralığındaki tüm gelirler (iptal edilmeyen işlerden)
     const revenueResult = await db
       .select({
-        totalRevenue: sum(jobs.totalAmount)
+        total: sum(jobs.totalAmount).mapWith(Number)
       })
       .from(jobs)
       .where(
         and(
-          sql`${jobs.createdAt} >= ${startDate}`,
-          sql`${jobs.createdAt} <= ${endDate}`,
-          // İptal edilmiş işleri gelir hesabına dahil etmiyoruz
+          sql`${jobs.date} >= ${startDate}`,
+          sql`${jobs.date} <= ${endDate}`,
           sql`${jobs.status} != 'iptal'`
         )
       );
-      
+    
+    // Bu tarih aralığındaki tüm giderler
     const expensesResult = await db
       .select({
-        totalExpenses: sum(expenses.amount)
+        total: sum(expenses.amount).mapWith(Number)
       })
       .from(expenses)
       .where(
@@ -595,9 +586,9 @@ export class DatabaseStorage implements IStorage {
           sql`${expenses.date} <= ${endDate}`
         )
       );
-      
-    const totalRevenue = Number(revenueResult[0]?.totalRevenue) || 0;
-    const totalExpenses = Number(expensesResult[0]?.totalExpenses) || 0;
+    
+    const totalRevenue = revenueResult[0]?.total || 0;
+    const totalExpenses = expensesResult[0]?.total || 0;
     
     return {
       totalRevenue,
@@ -740,6 +731,49 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Yedekten geri yükleme hatası:", error);
       return false;
+    }
+  }
+  
+  // Settings methods
+  async getSetting(key: string): Promise<string | undefined> {
+    try {
+      const [result] = await db.select().from(settings).where(eq(settings.key, key));
+      return result?.value;
+    } catch (error) {
+      console.error(`Ayar alınamadı: ${key}`, error);
+      return undefined;
+    }
+  }
+  
+  async setSetting(key: string, value: string): Promise<void> {
+    try {
+      // Önce ayarın var olup olmadığını kontrol et
+      const existing = await db.select().from(settings).where(eq(settings.key, key));
+      
+      if (existing.length > 0) {
+        // Ayar varsa güncelle
+        await db.update(settings)
+          .set({ value, updatedAt: new Date() })
+          .where(eq(settings.key, key));
+      } else {
+        // Ayar yoksa ekle
+        await db.insert(settings).values({
+          key,
+          value,
+          updatedAt: new Date()
+        });
+      }
+    } catch (error) {
+      console.error(`Ayar kaydedilemedi: ${key}=${value}`, error);
+    }
+  }
+  
+  async getAllSettings(): Promise<Setting[]> {
+    try {
+      return await db.select().from(settings);
+    } catch (error) {
+      console.error("Ayarlar alınamadı", error);
+      return [];
     }
   }
 }

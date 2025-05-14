@@ -134,6 +134,14 @@ export const customerAnalytics = pgTable("customer_analytics_view", {
   lastVisit: timestamp("last_visit"),
 });
 
+// Sistem ayarları tablosu
+export const settings = pgTable("settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
 // Types for our schema
 export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
@@ -157,3 +165,11 @@ export type Expense = typeof expenses.$inferSelect;
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 
 export type CustomerAnalytic = typeof customerAnalytics.$inferSelect;
+
+export const insertSettingSchema = createInsertSchema(settings).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type Setting = typeof settings.$inferSelect;
+export type InsertSetting = z.infer<typeof insertSettingSchema>;
