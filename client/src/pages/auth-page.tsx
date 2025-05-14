@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
-import { Lock, User } from "lucide-react";
+import { Lock, User, AlertCircle } from "lucide-react";
 
 // Login form şeması
 const loginSchema = z.object({
@@ -45,6 +46,7 @@ type ServerRegisterData = {
 export default function AuthPage() {
   const [, setLocation] = useLocation();
   const { user, isLoading, loginMutation } = useAuth();
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Login form için RHF hook
   const loginForm = useForm<LoginFormValues>({
@@ -61,8 +63,18 @@ export default function AuthPage() {
       setLocation("/");
     }
   }, [user, setLocation]);
+  
+  // Login hatası olduğunda form hatasını güncelle
+  useEffect(() => {
+    if (loginMutation.isError) {
+      setFormError((loginMutation.error as Error)?.message || "Giriş başarısız oldu. Lütfen bilgilerinizi kontrol edin.");
+    } else {
+      setFormError(null);
+    }
+  }, [loginMutation.isError, loginMutation.error]);
 
   const handleLoginSubmit = (values: LoginFormValues) => {
+    setFormError(null);
     loginMutation.mutate(values);
   };
 
@@ -116,6 +128,13 @@ export default function AuthPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {formError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{formError}</AlertDescription>
+              </Alert>
+            )}
+            
             <Form {...loginForm}>
               <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4 mt-4">
                 <FormField
