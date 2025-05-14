@@ -75,7 +75,11 @@ export default function AuthPage() {
 
   const handleLoginSubmit = (values: LoginFormValues) => {
     setFormError(null);
-    loginMutation.mutate(values);
+    loginMutation.mutate(values, {
+      onError: (error) => {
+        setFormError("Kullanıcı adı veya şifre hatalı");
+      }
+    });
   };
 
   if (isLoading) {
