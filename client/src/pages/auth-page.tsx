@@ -170,11 +170,8 @@ export default function AuthPage() {
             </Form>
           </CardContent>
           <CardFooter className="flex flex-col items-center justify-center space-y-2">
-            <p className="text-sm text-center text-gray-500">
-              Varsayılan giriş bilgileri:
-            </p>
             <p className="text-xs text-center text-gray-500">
-              Kullanıcı Adı: <span className="font-medium">admin</span> | Şifre: <span className="font-medium">zenit123</span>
+              © 2025 ZENITH CAR - Oto Yıkama Takip Sistemi
             </p>
           </CardFooter>
         </Card>
