@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,9 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
-import { Lock, User, UserPlus, Mail, UserCircle } from "lucide-react";
+import { Lock, User } from "lucide-react";
 
 // Login form şeması
 const loginSchema = z.object({
@@ -44,26 +43,15 @@ type ServerRegisterData = {
 };
 
 export default function AuthPage() {
-  const [activeTab, setActiveTab] = useState<string>("login");
   const [, setLocation] = useLocation();
-  const { user, isLoading, loginMutation, registerMutation } = useAuth();
+  const { user, isLoading, loginMutation } = useAuth();
 
-  // Formlar için RHF hook'ları
+  // Login form için RHF hook
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       username: "",
       password: ""
-    }
-  });
-
-  const registerForm = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-      name: "",
-      email: ""
     }
   });
 
@@ -76,17 +64,6 @@ export default function AuthPage() {
 
   const handleLoginSubmit = (values: LoginFormValues) => {
     loginMutation.mutate(values);
-  };
-
-  const handleRegisterSubmit = (values: RegisterFormValues) => {
-    // Form verilerini sunucu formatına dönüştür
-    const serverData: ServerRegisterData = {
-      username: values.username,
-      password: values.password,
-      name: values.name || ''
-    };
-    
-    registerMutation.mutate(serverData);
   };
 
   if (isLoading) {
@@ -133,188 +110,71 @@ export default function AuthPage() {
       <div className="w-full md:w-1/2 p-4 sm:p-8 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">
-              {activeTab === "login" ? "Giriş Yap" : "Hesap Oluştur"}
-            </CardTitle>
+            <CardTitle className="text-2xl text-center">Giriş Yap</CardTitle>
             <CardDescription className="text-center">
-              {activeTab === "login" 
-                ? "Sisteme erişmek için giriş yapın" 
-                : "Yeni bir kullanıcı hesabı oluşturun"}
+              ZENITH CAR sistemine erişmek için giriş yapın
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Giriş</TabsTrigger>
-                <TabsTrigger value="register">Kayıt</TabsTrigger>
-              </TabsList>
-              
-              {/* Giriş Formu */}
-              <TabsContent value="login">
-                <Form {...loginForm}>
-                  <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4 mt-4">
-                    <FormField
-                      control={loginForm.control}
-                      name="username"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Kullanıcı Adı</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input
-                                placeholder="Kullanıcı adınızı girin"
-                                className="pl-9"
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={loginForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Şifre</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input
-                                type="password"
-                                placeholder="Şifrenizi girin"
-                                className="pl-9"
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      disabled={loginMutation.isPending}
-                    >
-                      {loginMutation.isPending ? "Giriş yapılıyor..." : "Giriş Yap"}
-                    </Button>
-                  </form>
-                </Form>
-              </TabsContent>
-              
-              {/* Kayıt Formu */}
-              <TabsContent value="register">
-                <Form {...registerForm}>
-                  <form onSubmit={registerForm.handleSubmit(handleRegisterSubmit)} className="space-y-4 mt-4">
-                    <FormField
-                      control={registerForm.control}
-                      name="username"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Kullanıcı Adı</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input
-                                placeholder="Kullanıcı adı oluşturun"
-                                className="pl-9"
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={registerForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Ad Soyad</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <UserCircle className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input
-                                placeholder="Adınızı ve soyadınızı girin"
-                                className="pl-9"
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={registerForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>E-posta</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input
-                                type="email"
-                                placeholder="E-posta adresinizi girin"
-                                className="pl-9"
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={registerForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Şifre</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input
-                                type="password"
-                                placeholder="Şifre oluşturun"
-                                className="pl-9"
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      disabled={registerMutation.isPending}
-                    >
-                      {registerMutation.isPending ? "Kayıt yapılıyor..." : "Kayıt Ol"}
-                    </Button>
-                  </form>
-                </Form>
-              </TabsContent>
-            </Tabs>
+            <Form {...loginForm}>
+              <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4 mt-4">
+                <FormField
+                  control={loginForm.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Kullanıcı Adı</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Kullanıcı adınızı girin"
+                            className="pl-9"
+                            {...field}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={loginForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Şifre</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            type="password"
+                            placeholder="Şifrenizi girin"
+                            className="pl-9"
+                            {...field}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={loginMutation.isPending}
+                >
+                  {loginMutation.isPending ? "Giriş yapılıyor..." : "Giriş Yap"}
+                </Button>
+              </form>
+            </Form>
           </CardContent>
-          <CardFooter className="flex justify-center">
+          <CardFooter className="flex flex-col items-center justify-center space-y-2">
             <p className="text-sm text-center text-gray-500">
-              {activeTab === "login" 
-                ? "Hesabınız yok mu? " 
-                : "Zaten hesabınız var mı? "}
-              <Button 
-                variant="link" 
-                className="p-0 h-auto" 
-                onClick={() => setActiveTab(activeTab === "login" ? "register" : "login")}
-              >
-                {activeTab === "login" ? "Kayıt olun" : "Giriş yapın"}
-              </Button>
+              Varsayılan giriş bilgileri:
+            </p>
+            <p className="text-xs text-center text-gray-500">
+              Kullanıcı Adı: <span className="font-medium">admin</span> | Şifre: <span className="font-medium">zenit123</span>
             </p>
           </CardFooter>
         </Card>
