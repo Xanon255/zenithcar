@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
 import { Lock, User, AlertCircle } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 // Login form şeması
 const loginSchema = z.object({
@@ -73,13 +74,37 @@ export default function AuthPage() {
     }
   }, [loginMutation.isError, loginMutation.error]);
 
-  const handleLoginSubmit = (values: LoginFormValues) => {
-    setFormError(null);
-    loginMutation.mutate(values, {
-      onError: (error) => {
-        setFormError("Kullanıcı adı veya şifre hatalı");
+  const handleLoginSubmit = async (values: LoginFormValues) => {
+    try {
+      // Doğrudan fetch ile isteği yapın
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      // Hata kontrolü
+      if (!response.ok) {
+        const errorData = await response.json();
+        setFormError(errorData.error || "Kullanıcı adı veya şifre hatalı");
+        return;
       }
-    });
+
+      // Başarılı giriş
+      const userData = await response.json();
+      loginMutation.mutate(values); // Auth durumunu güncellemek için
+      
+    } catch (error) {
+      // Genel hata
+      setFormError("Kullanıcı adı veya şifre hatalı");
+      toast({
+        title: "Giriş Hatası",
+        description: "Kullanıcı adı veya şifre hatalı",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
