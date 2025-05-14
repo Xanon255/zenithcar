@@ -187,7 +187,7 @@ export class DatabaseStorage implements IStorage {
     
     return {
       customerId: customerId,
-      totalSpent: totalSpent,
+      totalSpent: String(totalSpent), // Numeric alanı kesinlikle string olarak döndür
       jobCount: Number(jobCount),
       lastVisit: lastVisit as Date
     };
