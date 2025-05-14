@@ -447,12 +447,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createExpense(expense: InsertExpense): Promise<Expense> {
-    const result = await db.insert(expenses).values(expense).returning();
+    // Amount'u string'e çevir
+    const expenseData = {
+      ...expense,
+      amount: expense.amount.toString()
+    };
+    
+    const result = await db.insert(expenses).values(expenseData).returning();
     return result[0];
   }
 
   async updateExpense(id: number, expense: Partial<InsertExpense>): Promise<Expense | undefined> {
-    const result = await db.update(expenses).set(expense).where(eq(expenses.id, id)).returning();
+    const expenseData: any = {...expense};
+    
+    // Eğer amount varsa string'e çevir
+    if (expenseData.amount !== undefined) {
+      expenseData.amount = expenseData.amount.toString();
+    }
+    
+    const result = await db.update(expenses).set(expenseData).where(eq(expenses.id, id)).returning();
     return result[0];
   }
 
@@ -612,7 +625,7 @@ export class DatabaseStorage implements IStorage {
     const jobsData = await this.getJobs();
     
     // JobServices verisini al
-    const jobServicesData = await db.select().from(jobServices);
+    const jobServicesData = await db.select().from(jobServices).execute();
     const usersData = await this.getUsers();
     const expensesData = await this.getExpenses();
     
@@ -661,7 +674,7 @@ export class DatabaseStorage implements IStorage {
       // Admin kullanıcıları silmemek için sadece normal kullanıcıları temizle
       const allUsers = await db.select().from(users);
       for (const user of allUsers) {
-        if (user.role !== 'admin') {
+        if (!user.isAdmin) { // isAdmin alanını kullan, role yok
           await db.delete(users).where(eq(users.id, user.id));
         }
       }
@@ -701,14 +714,14 @@ export class DatabaseStorage implements IStorage {
       
       for (const jobService of data.jobServices) {
         await db.insert(jobServices).values({
-          ...jobService,
-          id: undefined
+          jobId: jobService.jobId,
+          serviceId: jobService.serviceId
         });
       }
       
       for (const user of data.users) {
         // Admin olmayan kullanıcıları ekle
-        if (user.role !== 'admin') {
+        if (!user.isAdmin) {
           await db.insert(users).values({
             ...user,
             id: undefined
