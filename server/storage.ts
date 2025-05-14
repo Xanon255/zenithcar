@@ -271,7 +271,7 @@ export class DatabaseStorage implements IStorage {
   
   // Job methods
   async getJobs(): Promise<Job[]> {
-    return await db.select().from(jobs).orderBy(desc(jobs.date), desc(jobs.id));
+    return await db.select().from(jobs).orderBy(desc(jobs.createdAt), desc(jobs.id));
   }
   
   async getJobsByDate(date: Date): Promise<Job[]> {
@@ -286,11 +286,11 @@ export class DatabaseStorage implements IStorage {
       .from(jobs)
       .where(
         and(
-          sql`${jobs.date} >= ${startOfDay}`,
-          sql`${jobs.date} <= ${endOfDay}`
+          sql`${jobs.createdAt} >= ${startOfDay}`,
+          sql`${jobs.createdAt} <= ${endOfDay}`
         )
       )
-      .orderBy(desc(jobs.date), desc(jobs.id));
+      .orderBy(desc(jobs.createdAt), desc(jobs.id));
   }
   
   async getJobsByCustomer(customerId: number): Promise<Job[]> {
@@ -298,7 +298,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(jobs)
       .where(eq(jobs.customerId, customerId))
-      .orderBy(desc(jobs.date), desc(jobs.id));
+      .orderBy(desc(jobs.createdAt), desc(jobs.id));
   }
   
   async getJob(id: number): Promise<Job | undefined> {
@@ -482,16 +482,12 @@ export class DatabaseStorage implements IStorage {
     console.log("Günlük istatistik için tarih aralığı:", startOfDay, endOfDay);
     console.log("Gelen tarih:", date);
     
-    // Bugünkü işleri bul
-    const todayJobs = await db
-      .select()
-      .from(jobs)
-      .where(
-        and(
-          sql`${jobs.date} >= ${startOfDay}`,
-          sql`${jobs.date} <= ${endOfDay}`
-        )
-      );
+    // Bugünkü işleri SQL formatinda sorgu ile bul
+    const todayJobs = await db.execute(sql`
+      SELECT * FROM jobs 
+      WHERE created_at >= ${startOfDay} 
+      AND created_at <= ${endOfDay}
+    `);
     
     console.log("Bulunan işler:", todayJobs);
     
@@ -500,15 +496,17 @@ export class DatabaseStorage implements IStorage {
     let totalPaid = 0;
     let pendingPayments = 0;
     
-    for (const job of todayJobs) {
+    for (const job of todayJobs.rows) {
       if (job.status !== 'iptal') { // İptal olan işleri hesaba katma
-        const amount = parseFloat(job.totalAmount);
+        const amount = parseFloat(job.total_amount);
         totalAmount += amount;
         
-        if (job.isPaid) {
+        const paidAmount = parseFloat(job.paid_amount);
+        if (paidAmount >= amount) { // Tamamen ödenmişse
           totalPaid += amount;
         } else {
-          pendingPayments += amount;
+          pendingPayments += (amount - paidAmount);
+          totalPaid += paidAmount;
         }
       }
     }
@@ -516,7 +514,7 @@ export class DatabaseStorage implements IStorage {
     return {
       totalAmount,
       totalPaid,
-      totalJobs: todayJobs.filter(job => job.status !== 'iptal').length,
+      totalJobs: todayJobs.rows.filter(job => job.status !== 'iptal').length,
       pendingPayments
     };
   }
@@ -561,34 +559,24 @@ export class DatabaseStorage implements IStorage {
     netProfit: number;
   }> {
     // Bu tarih aralığındaki tüm gelirler (iptal edilmeyen işlerden)
-    const revenueResult = await db
-      .select({
-        total: sum(jobs.totalAmount).mapWith(Number)
-      })
-      .from(jobs)
-      .where(
-        and(
-          sql`${jobs.date} >= ${startDate}`,
-          sql`${jobs.date} <= ${endDate}`,
-          sql`${jobs.status} != 'iptal'`
-        )
-      );
+    const revenueResult = await db.execute(sql`
+      SELECT SUM(CAST(total_amount AS numeric)) AS total
+      FROM jobs
+      WHERE created_at >= ${startDate}
+      AND created_at <= ${endDate}
+      AND status != 'iptal'
+    `);
     
     // Bu tarih aralığındaki tüm giderler
-    const expensesResult = await db
-      .select({
-        total: sum(expenses.amount).mapWith(Number)
-      })
-      .from(expenses)
-      .where(
-        and(
-          sql`${expenses.date} >= ${startDate}`,
-          sql`${expenses.date} <= ${endDate}`
-        )
-      );
+    const expensesResult = await db.execute(sql`
+      SELECT SUM(CAST(amount AS numeric)) AS total
+      FROM expenses
+      WHERE date >= ${startDate}
+      AND date <= ${endDate}
+    `);
     
-    const totalRevenue = revenueResult[0]?.total || 0;
-    const totalExpenses = expensesResult[0]?.total || 0;
+    const totalRevenue = parseFloat(revenueResult.rows[0]?.total || '0');
+    const totalExpenses = parseFloat(expensesResult.rows[0]?.total || '0');
     
     return {
       totalRevenue,
