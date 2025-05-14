@@ -15,6 +15,8 @@ import PriceList from "@/pages/PriceList";
 import VehicleList from "@/pages/VehicleList";
 import Users from "@/pages/Users";
 import Expenses from "@/pages/Expenses";
+import Profile from "@/pages/Profile";
+import Settings from "@/pages/Settings";
 
 function Router() {
   return (
@@ -33,6 +35,8 @@ function Router() {
         <Route path="/price-list" component={PriceList} />
         <Route path="/vehicle-list" component={VehicleList} />
         <Route path="/users" component={Users} />
+        <Route path="/profile" component={Profile} />
+        <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

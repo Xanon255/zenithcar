@@ -270,10 +270,10 @@ export default function Navbar() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setLocation("/profile")}>
+                  <DropdownMenuItem onClick={() => handleSelect("/profile")}>
                     Profil
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setLocation("/settings")}>
+                  <DropdownMenuItem onClick={() => handleSelect("/settings")}>
                     Ayarlar
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}>
