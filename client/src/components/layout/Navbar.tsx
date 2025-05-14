@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Moon, ChevronDown, Search, X, Car, UserRound, Settings } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -24,6 +25,7 @@ export default function Navbar() {
   const [search, setSearch] = useState("");
   const [location, setLocation] = useLocation();
   const [open, setOpen] = useState(false);
+  const { logoutMutation } = useAuth();
   
   // Veri sorgulama
   const customersQuery = useQuery<any[]>({
@@ -62,8 +64,11 @@ export default function Navbar() {
   };
   
   const handleLogout = () => {
-    // Implement logout functionality
-    alert("Çıkış yap");
+    // API'ye çıkış isteği gönder
+    logoutMutation.mutate();
+    
+    // Anasayfaya yönlendir
+    setLocation("/auth");
   };
   
   const toggleDarkMode = () => {
