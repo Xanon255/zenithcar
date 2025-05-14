@@ -106,9 +106,54 @@ export default function Reports() {
     staleTime: 0, // Her zaman güncel veri al
   });
   
+  // Net kâr için tarih seçimi (aylık/yıllık/tümü)
+  const [profitDateRange, setProfitDateRange] = useState<"monthly" | "yearly" | "all">("monthly");
+  
+  // Seçilen tarih aralığına göre başlangıç ve bitiş tarihlerini belirle
+  const getProfitDateRange = () => {
+    const now = new Date();
+    
+    switch (profitDateRange) {
+      case "monthly":
+        // Ayın ilk günü ve son günü
+        return {
+          start: new Date(now.getFullYear(), now.getMonth(), 1),
+          end: new Date(now.getFullYear(), now.getMonth() + 1, 0)
+        };
+      case "yearly":
+        // Yılın ilk günü ve son günü
+        return {
+          start: new Date(now.getFullYear(), 0, 1),
+          end: new Date(now.getFullYear(), 11, 31)
+        };
+      case "all":
+        // Başlangıçtan bugüne
+        return {
+          start: new Date(2020, 0, 1), // Varsayılan başlangıç tarihi
+          end: now
+        };
+      default:
+        return {
+          start: new Date(now.getFullYear(), now.getMonth(), 1),
+          end: new Date(now.getFullYear(), now.getMonth() + 1, 0)
+        };
+    }
+  };
+  
+  const selectedProfitRange = getProfitDateRange();
+  
   // Fetch net profit stats
   const netProfitQuery = useQuery<NetProfitStats>({
-    queryKey: [`/api/stats/net-profit?startDate=${format(new Date(), "yyyy-MM-01")}&endDate=${format(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0), "yyyy-MM-dd")}`],
+    queryKey: [
+      `/api/stats/net-profit`,
+      profitDateRange,
+      format(selectedProfitRange.start, "yyyy-MM-dd"),
+      format(selectedProfitRange.end, "yyyy-MM-dd")
+    ],
+    queryFn: async () => {
+      const res = await fetch(`/api/stats/net-profit?startDate=${format(selectedProfitRange.start, "yyyy-MM-dd")}&endDate=${format(selectedProfitRange.end, "yyyy-MM-dd")}`);
+      return res.json();
+    },
     refetchInterval: 5000, // Her 5 saniyede bir yenile
     staleTime: 0, // Her zaman güncel veri al
   });
@@ -666,6 +711,87 @@ export default function Reports() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+          
+          {/* Net Kâr Analizi Bölümü */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex justify-between">
+                <span>Net Kâr Analizi</span>
+                <div className="flex space-x-2">
+                  <Button 
+                    size="sm" 
+                    variant={profitDateRange === "monthly" ? "default" : "outline"}
+                    onClick={() => setProfitDateRange("monthly")}
+                  >
+                    Aylık
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant={profitDateRange === "yearly" ? "default" : "outline"}
+                    onClick={() => setProfitDateRange("yearly")}
+                  >
+                    Yıllık
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant={profitDateRange === "all" ? "default" : "outline"}
+                    onClick={() => setProfitDateRange("all")}
+                  >
+                    Tümü
+                  </Button>
+                </div>
+              </CardTitle>
+              <CardDescription>
+                {profitDateRange === "monthly" 
+                  ? `${format(selectedProfitRange.start, "MMMM yyyy", { locale: tr })} ayı için net kâr analizi`
+                  : profitDateRange === "yearly"
+                    ? `${format(selectedProfitRange.start, "yyyy", { locale: tr })} yılı için net kâr analizi`
+                    : `Tüm zamanlar için net kâr analizi`
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardDescription>Toplam Gelir</CardDescription>
+                    <CardTitle className="text-2xl text-green-600">
+                      {netProfitQuery.data?.totalRevenue 
+                        ? `${formatCurrency(netProfitQuery.data.totalRevenue)} TL` 
+                        : "0.00 TL"
+                      }
+                    </CardTitle>
+                  </CardHeader>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardDescription>Toplam Gider</CardDescription>
+                    <CardTitle className="text-2xl text-red-600">
+                      {netProfitQuery.data?.totalExpenses 
+                        ? `${formatCurrency(netProfitQuery.data.totalExpenses)} TL` 
+                        : "0.00 TL"
+                      }
+                    </CardTitle>
+                  </CardHeader>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardDescription>Net Kâr</CardDescription>
+                    <CardTitle className="text-2xl font-bold">
+                      {netProfitQuery.data?.netProfit 
+                        ? `${formatCurrency(netProfitQuery.data.netProfit)} TL` 
+                        : "0.00 TL"
+                      }
+                    </CardTitle>
+                  </CardHeader>
+                </Card>
+              </div>
+              
+              {/* Net Kâr Grafiği Buraya Eklenecek */}
             </CardContent>
           </Card>
         </TabsContent>
