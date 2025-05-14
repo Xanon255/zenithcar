@@ -137,6 +137,9 @@ export async function getBackupFiles(): Promise<BackupFileInfo[]> {
       }
     }
     
+    // Dosyaları tarihe göre sırala (en yeni en üstte)
+    backupFiles.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    
     return backupFiles;
   } catch (error) {
     console.error('Yedekleme dosyaları listelenirken hata oluştu:', error);

@@ -430,14 +430,34 @@ export default function Settings() {
                   )}
                 </div>
                 
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  disabled={manualBackupMutation.isPending}
-                  onClick={() => manualBackupMutation.mutate()}
-                >
-                  {manualBackupMutation.isPending ? "Yedekleniyor..." : "Manuel Yedek Al"}
-                </Button>
+                <div className="mt-4 flex flex-col gap-2">
+                  <Button 
+                    variant="outline" 
+                    disabled={manualBackupMutation.isPending}
+                    onClick={() => {
+                      toast({
+                        title: "Yedekleme başlatıldı",
+                        description: "Lütfen bekleyin..."
+                      });
+                      manualBackupMutation.mutate();
+                    }}
+                  >
+                    {manualBackupMutation.isPending ? "Yedekleniyor..." : "Manuel Yedek Al"}
+                  </Button>
+                  
+                  {/* Yedekleme sonucu mesajı */}
+                  {manualBackupMutation.isSuccess && (
+                    <div className="text-sm text-green-600 py-1">
+                      ✓ Son yedekleme başarıyla tamamlandı
+                    </div>
+                  )}
+                  
+                  {manualBackupMutation.isError && (
+                    <div className="text-sm text-red-600 py-1">
+                      ✗ Yedekleme sırasında bir hata oluştu
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div>
